@@ -1,0 +1,128 @@
+[
+  {
+    "id": "entry-1",
+    "date": "2025-01-08",
+    "text": "Wake before dawn. Restless, detached, unable to stay with one task.",
+    "markers": ["😶", "🫨"],
+    "next_action": "stopped working"
+  },
+  {
+    "id": "entry-2",
+    "date": "2025-01-11",
+    "text": "Flat afternoon. Hard to focus. Everything feels distant and slowed.",
+    "markers": ["😶", "🥱"],
+    "next_action": "rested"
+  },
+  {
+    "id": "entry-3",
+    "date": "2025-01-29",
+    "text": "Clear morning. Work moved normally. No sense of drift.",
+    "markers": ["🙂"],
+    "next_action": "kept working"
+  },
+  {
+    "id": "entry-4",
+    "date": "2025-02-14",
+    "text": "Detached feeling returned at night. Fragmented thoughts, little momentum.",
+    "markers": ["😶", "🫨"],
+    "next_action": "went outside"
+  },
+  {
+    "id": "entry-5",
+    "date": "2025-02-18",
+    "text": "More settled. Meals, calls, and errands happened without friction.",
+    "markers": ["🙂"],
+    "next_action": "ran errands"
+  },
+  {
+    "id": "entry-6",
+    "date": "2025-03-03",
+    "text": "Back to a restless loop. Reading the same lines repeatedly.",
+    "markers": ["🫨"],
+    "next_action": "stopped working"
+  },
+  {
+    "id": "entry-7",
+    "date": "2025-03-21",
+    "text": "Steady morning. Attention held. The distant feeling did not appear.",
+    "markers": ["🙂"],
+    "next_action": "worked a bit more"
+  },
+  {
+    "id": "entry-8",
+    "date": "2025-04-07",
+    "text": "Detached again after sunset. Hard to begin anything. Pace feels slowed.",
+    "markers": ["😶", "🥱"],
+    "next_action": "rested"
+  },
+  {
+    "id": "entry-9",
+    "date": "2025-04-28",
+    "text": "Notably restless. Started several tasks, finished none.",
+    "markers": ["🫨"],
+    "next_action": "avoided everything"
+  },
+  {
+    "id": "entry-10",
+    "date": "2025-05-16",
+    "text": "Order returned for a few days. Calls answered. Notes made sense.",
+    "markers": ["🙂"],
+    "next_action": "kept working"
+  },
+  {
+    "id": "entry-11",
+    "date": "2025-06-02",
+    "text": "Distant again. Slow pace, low momentum, hard to remain with one task.",
+    "markers": ["😶", "🥱"],
+    "next_action": "worked for 10 minutes"
+  },
+  {
+    "id": "entry-12",
+    "date": "2025-07-19",
+    "text": "Restless evening. Fragmented attention. Several unfinished starts.",
+    "markers": ["🫨"],
+    "next_action": "went outside"
+  },
+  {
+    "id": "entry-13",
+    "date": "2025-08-11",
+    "text": "A steadier week. No real drift. Tasks completed in sequence.",
+    "markers": ["🙂"],
+    "next_action": "finished the task"
+  },
+  {
+    "id": "entry-14",
+    "date": "2025-09-04",
+    "text": "Detached state appeared again after midnight. Everything felt slowed and far away.",
+    "markers": ["😶", "🥱"],
+    "next_action": "lay down"
+  },
+  {
+    "id": "entry-15",
+    "date": "2025-10-22",
+    "text": "Restless and distant. Read the same paragraph several times.",
+    "markers": ["🫨", "😶"],
+    "next_action": "made tea"
+  },
+  {
+    "id": "entry-16",
+    "date": "2025-12-09",
+    "text": "Clear enough to work. No sign of the slowed detached state.",
+    "markers": ["🙂"],
+    "next_action": "kept working"
+  },
+  {
+    "id": "entry-17",
+    "date": "2026-01-27",
+    "text": "The same detached pattern returned. Hard to begin. Hard to hold attention.",
+    "markers": ["😶", "🥱"],
+    "next_action": "went outside"
+  },
+  {
+    "id": "entry-18",
+    "date": "2026-03-18",
+    "text": "Restless again near midnight. Pace slowed. Focus broke into fragments.",
+    "markers": ["🫨", "🥱"],
+    "next_action": "rested"
+  }
+]

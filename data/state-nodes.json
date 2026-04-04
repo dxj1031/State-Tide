@@ -1,0 +1,423 @@
+[
+  {
+    "id": "detached-restless",
+    "label": "detached, restless",
+    "summary": "Distance, drift, and trouble remaining with one task.",
+    "tags": [
+      "detached",
+      "restless",
+      "drift",
+      "fragmented"
+    ],
+    "emojis": [
+      "😶",
+      "🫨"
+    ]
+  },
+  {
+    "id": "detached-drained",
+    "label": "detached, drained",
+    "summary": "Low momentum, slowed pace, and distant attention.",
+    "tags": [
+      "detached",
+      "drained",
+      "slowed",
+      "low momentum"
+    ],
+    "emojis": [
+      "😶",
+      "🥱"
+    ]
+  },
+  {
+    "id": "restless-loop",
+    "label": "restless loop",
+    "summary": "Repeated starts, unfinished tasks, and agitated attention.",
+    "tags": [
+      "restless",
+      "unfinished",
+      "agitated",
+      "loop"
+    ],
+    "emojis": [
+      "🫨"
+    ]
+  },
+  {
+    "id": "overwhelmed-surge",
+    "label": "overwhelmed surge",
+    "summary": "Crowded, flooded, and hard to sort through.",
+    "tags": [
+      "overwhelmed",
+      "crowded",
+      "flooded",
+      "spinning"
+    ],
+    "emojis": [
+      "😵"
+    ]
+  },
+  {
+    "id": "clear-steady",
+    "label": "clear, steady",
+    "summary": "Held attention, ordinary pacing, and task continuity.",
+    "tags": [
+      "clear",
+      "steady",
+      "settled",
+      "order"
+    ],
+    "emojis": [
+      "🙂"
+    ]
+  },
+  {
+    "id": "bright-brittle",
+    "label": "bright brittle",
+    "summary": "State marked by bright, brittle, ceremonial.",
+    "tags": [
+      "bright",
+      "brittle",
+      "ceremonial"
+    ],
+    "emojis": [
+      "🫨"
+    ]
+  },
+  {
+    "id": "detached-restless-drained",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-2",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-3",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-4",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-5",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-6",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-7",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-8",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-9",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-10",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-11",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-12",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-13",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-14",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-15",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-16",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-17",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-18",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-19",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-20",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  },
+  {
+    "id": "detached-restless-drained-21",
+    "label": "detached, restless, drained",
+    "summary": "State marked by detached, restless, drained, again.",
+    "tags": [
+      "detached",
+      "restless",
+      "drained",
+      "again"
+    ],
+    "emojis": [
+      "😶",
+      "🫨",
+      "🥱"
+    ]
+  }
+]
