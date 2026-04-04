@@ -5,7 +5,6 @@ import entries from "@/data/journal-entries.json";
 import { extractEmoji, type RelatedEntry } from "@/lib/matching";
 import type { ClassificationResult } from "@/lib/state-classification";
 import {
-  compute_gaps,
   find_similar_entries,
   retrieve_timeline
 } from "@/lib/state-tides-service";
@@ -149,7 +148,6 @@ export default function HomePage() {
 
   const analysis = useMemo(() => retrieve_timeline(query, entries), [query]);
   const topMatches = useMemo(() => find_similar_entries(query, entries), [query]);
-  const gapSummary = useMemo(() => compute_gaps(analysis.relatedTimeline), [analysis.relatedTimeline]);
   const dotTimeline = useMemo(
     () => buildDotTimeline(analysis.relatedTimeline, entries),
     [analysis.relatedTimeline]
@@ -295,7 +293,7 @@ export default function HomePage() {
         <>
           <section className="results-grid">
             <article className="panel summary-panel">
-              <p className="section-label">Reading</p>
+              <p className="section-label">Analysis</p>
               <h2>You&apos;ve felt this before.</h2>
               <div className="reading-grid">
                 <span className="reading-grid-line reading-grid-line-vertical" aria-hidden="true" />
@@ -323,19 +321,6 @@ export default function HomePage() {
                   </p>
                 </article>
               </div>
-
-              <p className="summary-line">
-                {`This state appeared on ${formatDate(analysis.relatedTimeline[0].date)}.`}
-              </p>
-              {gapSummary.at(-1)?.hasTrailingAbsence ? (
-                <p className="summary-line">
-                  {`After ${formatDate(
-                    analysis.relatedTimeline.at(-1)?.date ?? analysis.relatedTimeline[0].date
-                  )}, nothing similar was recorded for ${
-                    analysis.relatedTimeline.at(-1)?.daysWithoutRelatedAfter
-                  } days.`}
-                </p>
-              ) : null}
 
               <div className="next-action-block">
                 <div className="next-action-header">
@@ -600,6 +585,7 @@ export default function HomePage() {
                 ) : null}
               </div>
             ) : null}
+
           </section>
         </>
       ) : null}
