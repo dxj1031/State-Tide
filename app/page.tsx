@@ -3,7 +3,10 @@
 import { FormEvent, useMemo, useState } from "react";
 import entries from "@/data/journal-entries.json";
 import { extractEmoji, type RelatedEntry } from "@/lib/matching";
-import type { ClassificationResult } from "@/lib/state-classification";
+import {
+  EMOTION_EMOJIS,
+  type ClassificationResult
+} from "@/lib/state-classification";
 import {
   find_similar_entries,
   retrieve_timeline
@@ -230,7 +233,9 @@ export default function HomePage() {
   const selectedPoint = dotTimeline.points.find((point) => point.entry.id === selectedPointId) ?? null;
   const activePoint = selectedPoint ?? hoveredPoint;
   const emotionDisplay = classification
-    ? classification.fragments.map((fragment) => `${fragment.emoji} ${fragment.label}`).join(", ")
+    ? classification.record.emotion_labels
+        .map((label) => `${EMOTION_EMOJIS[label]} ${label}`)
+        .join(", ")
     : "Unclear";
   const isWorking = isClassifying || isSearching;
   const statusText = isClassifying
@@ -294,7 +299,6 @@ export default function HomePage() {
           <section className="results-grid">
             <article className="panel summary-panel">
               <p className="section-label">Analysis</p>
-              <h2>You&apos;ve felt this before.</h2>
               <div className="reading-grid">
                 <span className="reading-grid-line reading-grid-line-vertical" aria-hidden="true" />
                 <span className="reading-grid-line reading-grid-line-horizontal" aria-hidden="true" />
@@ -396,6 +400,7 @@ export default function HomePage() {
 
             <article className="panel matches-panel">
               <p className="section-label">Top 3 similar entries</p>
+              <h2>You&apos;ve felt this before.</h2>
               <div className="matches">
                 {topMatches.map((entry) => (
                   <div key={entry.id} className="match-card">

@@ -23,6 +23,10 @@ test("tokenize removes punctuation and common filler words", () => {
   ]);
 });
 
+test("tokenize drops 'this' as a filler token", () => {
+  assert.deepEqual(tokenize("This felt uncertain today."), ["felt", "uncertain"]);
+});
+
 test("extractEmoji returns distinct emoji markers from input", () => {
   assert.deepEqual(extractEmoji("\u{1F636} detached \u{1FAE8} \u{1F636}"), ["😶", "🫨"]);
 });
@@ -57,16 +61,44 @@ test("heuristic classification organizes fragments for a fragmented note", () =>
   assert.equal(result.source, "heuristic");
 });
 
-test("parseClassificationResponse reads structured similarity JSON", () => {
-  const result = parseClassificationResponse(
-    '{"record":{"id":"detached-restless","text":"Detached and restless, hard to begin.","timestamp":"2026-04-04","situation":"Detached and restless","automatic_thought":"hard to begin","emotion_labels":["detached","restless"],"emotion_intensity":7,"behavior":"hard to begin","alternative_framing":"Distance and drift have appeared before.","tags":["detached","restless"],"similar_states":[{"state_id":"detached-restless","score":0.83,"reason":"Shared language with detached and restless."}],"is_novel":false},"matches":[{"state_id":"detached-restless","label":"detached, restless","score":0.83,"reason":"Shared language with detached and restless."}],"is_novel":false,"new_state":null}',
+test("heuristic classification keeps emotion labels in the allowed set", () => {
+  const result = heuristicClassifyState(
+    "I felt nervous when I decided to participate in a hackathon.",
     stateNodes
+  );
+
+  assert.ok(result.record.emotion_labels.includes("nervous"));
+  assert.ok(!result.record.emotion_labels.includes("neutral"));
+  assert.equal(result.record.emotion_labels.some((label) => label === "felt"), false);
+  assert.equal(result.record.emotion_labels.some((label) => label === "when"), false);
+  assert.notEqual(result.record.situation, "I felt nervous when I decided to participate in a hackathon");
+});
+
+test("parseClassificationResponse accepts fenced JSON and normalizes invalid emotions", () => {
+  const result = parseClassificationResponse(
+    '```json\n{"situation":"joining a hackathon","automatic_thought":"I might not be good enough.","emotion_labels":["nervous","sluggish","when"],"emotion_intensity":5,"behavior":null}\n```',
+    stateNodes,
+    "I felt nervous when I decided to participate in a hackathon."
+  );
+
+  assert.equal(result.record.situation, "joining a hackathon");
+  assert.equal(result.record.automatic_thought, "I might not be good enough.");
+  assert.deepEqual(result.record.emotion_labels, ["nervous", "drained"]);
+  assert.equal(result.record.emotion_intensity, 5);
+});
+
+test("parseClassificationResponse still honors explicit similarity payloads", () => {
+  const result = parseClassificationResponse(
+    '{"record":{"id":"detached-restless","text":"Detached and restless, hard to begin.","timestamp":"2026-04-04","situation":"late at night","automatic_thought":"Starting will take too much effort.","emotion_labels":["drained","nervous"],"emotion_intensity":7,"behavior":"hard to begin","alternative_framing":"Distance and drift have appeared before.","tags":["detached","restless"],"similar_states":[{"state_id":"detached-restless","score":0.83,"reason":"Shared language with detached and restless."}],"is_novel":false},"matches":[{"state_id":"detached-restless","label":"detached, restless","score":0.83,"reason":"Shared language with detached and restless."}],"is_novel":false,"new_state":null}',
+    stateNodes,
+    "Detached and restless, hard to begin."
   );
 
   assert.equal(result.stateKey, "detached-restless");
   assert.equal(result.label, "detached, restless");
   assert.equal(result.matches[0]?.score, 0.83);
-  assert.equal(result.record.situation, "Detached and restless");
+  assert.equal(result.record.situation, "late at night");
+  assert.deepEqual(result.record.emotion_labels, ["drained", "nervous"]);
   assert.equal(result.isNovel, false);
 });
 

@@ -4,7 +4,7 @@ State Tides is a lightweight Next.js prototype for showing that a mental or emot
 
 The app takes a short fragmented note, looks for similar past entries in a local longitudinal dataset, and presents:
 
-- a calm `Reading` view with structured state inference
+- a calm `Analysis` view with structured state inference
 - related past fragments
 - a dot-based timeline with visible gaps
 - a lightweight `Next Action` reflection flow showing that responses vary
@@ -83,7 +83,12 @@ The prototype is already wired to call Claude through:
 
 Claude is used only as the semantic layer. It helps:
 
-- infer structured internal state records
+- infer strict JSON state records with:
+  - `situation`
+  - `automatic_thought`
+  - `emotion_labels`
+  - `emotion_intensity`
+  - `behavior`
 - compare a new note against existing state nodes
 - score similarity to multiple states
 - decide whether the note is novel enough to create a new state
@@ -118,6 +123,11 @@ The repo uses local anonymized synthetic data for the demo:
 
 - `data/journal-entries.json`
 - `data/state-nodes.json`
+
+Note:
+
+- `data/state-nodes.json` can change locally during runtime when a note is classified as novel
+- for clean demos or commits, restore that file before committing if you do not want runtime-generated state nodes in git
 
 The dataset is designed to show:
 

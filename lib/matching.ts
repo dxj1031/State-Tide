@@ -41,6 +41,7 @@ const STOP_WORDS = new Set([
   "on",
   "or",
   "same",
+  "this",
   "the",
   "to",
   "today",

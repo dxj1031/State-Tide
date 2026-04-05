@@ -36,17 +36,14 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         model: process.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL,
-        max_tokens: 500,
+        max_tokens: 250,
+        temperature: 0,
         system:
-          "You are the semantic similarity layer for a journaling prototype. Use CBT-style thought-record structure internally, but do not output advice. Return strict JSON only with this schema: {\"record\":{\"id\":\"string\",\"text\":\"string\",\"timestamp\":\"YYYY-MM-DD\",\"situation\":\"string | null\",\"automatic_thought\":\"string | null\",\"emotion_labels\":[\"string\"],\"emotion_intensity\":0,\"behavior\":\"string | null\",\"alternative_framing\":\"string | null\",\"tags\":[\"string\"],\"similar_states\":[{\"state_id\":\"string\",\"score\":0.0,\"reason\":\"string\"}],\"is_novel\":true},\"matches\":[{\"state_id\":\"string\",\"label\":\"string\",\"score\":0.0,\"reason\":\"string\"}],\"is_novel\":true,\"new_state\":{\"label\":\"string\",\"summary\":\"string\",\"tags\":[\"string\"],\"emojis\":[\"emoji\"]}}. Compare the input note against every provided state node. Score every provided state between 0 and 1 and sort matches descending. Only mark is_novel true when the best match is genuinely weak. Create new_state sparingly. Keep wording factual and short. No markdown. No prose outside JSON.",
+          "You are a function that returns ONLY valid JSON. Do NOT output explanations. Do NOT output natural language outside JSON. Do NOT add extra fields. Do NOT wrap the JSON in markdown. Return exactly one JSON object with this schema: {\"situation\":\"string | null\",\"automatic_thought\":\"string | null\",\"emotion_labels\":[\"anxious\"|\"nervous\"|\"overwhelmed\"|\"sad\"|\"drained\"|\"frustrated\"|\"uncertain\"|\"neutral\"],\"emotion_intensity\":0,\"behavior\":\"string | null\"}. Rules: emotion_labels must contain only values from that enum. Never include filler words or actions as emotions. If no clear emotion is present, return [\"neutral\"]. situation must be a short phrase, not a full sentence. automatic_thought must be the likely internal belief, not the situation. behavior must describe what the user did, avoided, or implied doing; if unclear use null. emotion_intensity must be an integer 0 to 10 and default to 5 if uncertain. Output valid JSON only.",
         messages: [
           {
             role: "user",
-            content: JSON.stringify({
-              input: text,
-              novelty_threshold: 0.42,
-              state_nodes: stateNodes
-            })
+            content: `Analyze the following note and return JSON only.\n\nInput:\n${text}`
           }
         ]
       }),
@@ -66,7 +63,7 @@ export async function POST(request: NextRequest) {
       throw new Error("Anthropic response did not include text content.");
     }
 
-    const parsed = parseClassificationResponse(textBlock, stateNodes);
+    const parsed = parseClassificationResponse(textBlock, stateNodes, text);
     const result: ClassificationResult = {
       ...parsed,
       source: "anthropic"
