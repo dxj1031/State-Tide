@@ -19,6 +19,7 @@ export type RelatedEntry = JournalEntry & {
 
 const STOP_WORDS = new Set([
   "a",
+  "about",
   "an",
   "and",
   "are",
@@ -28,6 +29,8 @@ const STOP_WORDS = new Set([
   "but",
   "by",
   "for",
+  "feel",
+  "felt",
   "from",
   "hard",
   "i",
@@ -41,6 +44,7 @@ const STOP_WORDS = new Set([
   "on",
   "or",
   "same",
+  "really",
   "this",
   "the",
   "to",

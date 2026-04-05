@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { StateNode } from "./state-classification.ts";
+import { sanitizeStateNode, type StateNode } from "./state-classification.ts";
 
 const STATE_NODES_PATH = path.join(process.cwd(), "data", "state-nodes.json");
 
@@ -36,10 +36,14 @@ export async function loadStateNodes() {
 
   return parsed
     .map((node) => normalizeStateNode(node))
-    .filter((node): node is StateNode => node !== null);
+    .filter((node): node is StateNode => node !== null)
+    .map((node) => sanitizeStateNode(node));
 }
 
 export async function saveStateNodes(nodes: StateNode[]) {
-  await fs.writeFile(STATE_NODES_PATH, JSON.stringify(nodes, null, 2), "utf8");
+  await fs.writeFile(
+    STATE_NODES_PATH,
+    JSON.stringify(nodes.map((node) => sanitizeStateNode(node)), null, 2),
+    "utf8"
+  );
 }
-

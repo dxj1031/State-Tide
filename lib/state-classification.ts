@@ -279,6 +279,21 @@ function unique<T>(items: T[]) {
   return Array.from(new Set(items));
 }
 
+const TAG_FILLER_TERMS = new Set([
+  "about",
+  "again",
+  "feel",
+  "felt",
+  "just",
+  "kind",
+  "like",
+  "really",
+  "sort",
+  "that",
+  "this",
+  "very"
+]);
+
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -327,6 +342,54 @@ function splitClauses(input: string) {
     .filter(Boolean);
 }
 
+function cleanTagCandidate(value: string) {
+  const cleaned = compactText(value.toLowerCase());
+  const tokens = tokenize(cleaned).filter((token) => !TAG_FILLER_TERMS.has(token));
+
+  if (tokens.length === 0) {
+    return null;
+  }
+
+  return tokens.slice(0, 3).join(" ");
+}
+
+function sanitizeTagList(tags: string[], maxLength: number) {
+  return unique(tags.map(cleanTagCandidate).filter((tag): tag is string => tag !== null)).slice(
+    0,
+    maxLength
+  );
+}
+
+function sanitizeStateLabel(value: string, fallbackTags: string[], fallbackEmotions: EmotionLabel[] = []) {
+  const segmented = unique(
+    value
+      .split(/[,/]/)
+      .map((part) => cleanTagCandidate(part))
+      .filter((part): part is string => part !== null)
+  );
+
+  if (segmented.length > 1) {
+    return segmented.slice(0, 3).join(", ");
+  }
+
+  const cleaned = cleanTagCandidate(value);
+
+  if (cleaned) {
+    return cleaned;
+  }
+
+  const meaningfulEmotions = fallbackEmotions.filter((label) => label !== "neutral");
+  if (meaningfulEmotions.length > 0) {
+    return meaningfulEmotions.slice(0, 2).join(", ");
+  }
+
+  if (fallbackTags.length > 0) {
+    return fallbackTags.slice(0, 2).join(", ");
+  }
+
+  return "fragmented state";
+}
+
 function normalizeComparisonToken(token: string) {
   return token
     .replace(/ing$/i, "")
@@ -361,6 +424,10 @@ function phrasesAreNearDuplicates(left: string | null, right: string | null) {
 function normalizeEmotionLabel(value: string): EmotionLabel | null {
   const normalized = compactText(value.toLowerCase());
   return EMOTION_ALIASES[normalized] ?? null;
+}
+
+export function isEmotionVocabularyLabel(value: string) {
+  return normalizeEmotionLabel(value) !== null;
 }
 
 function normalizeEmotionLabels(value: unknown): EmotionLabel[] {
@@ -595,17 +662,16 @@ function buildScoringQuery(input: string, analysis: StructuredStateAnalysis) {
 }
 
 function buildRecordTags(fragments: StateFragment[], analysis: StructuredStateAnalysis) {
-  return unique(
+  return sanitizeTagList(
     [
       ...fragments.flatMap((fragment) => [fragment.key, fragment.label, ...fragment.evidence]),
       ...analysis.emotion_labels,
       ...tokenize(analysis.situation ?? ""),
       ...tokenize(analysis.behavior ?? ""),
       ...tokenize(analysis.automatic_thought ?? "")
-    ]
-      .map((item) => compactText(item))
-      .filter(Boolean)
-  ).slice(0, 6);
+    ],
+    6
+  );
 }
 
 function normalizeStringArray(value: unknown, maxLength: number) {
@@ -617,6 +683,22 @@ function normalizeStringArray(value: unknown, maxLength: number) {
           .filter(Boolean)
       ).slice(0, maxLength)
     : [];
+}
+
+export function sanitizeStateNode(node: StateNode): StateNode {
+  const normalizedEmotionTags = sanitizeTagList(node.tags, 4)
+    .map((tag) => normalizeEmotionLabel(tag))
+    .filter((label): label is EmotionLabel => label !== null);
+  const tags = sanitizeTagList(node.tags, 4);
+  const label = sanitizeStateLabel(node.label, tags, normalizedEmotionTags);
+
+  return {
+    id: node.id,
+    label,
+    summary: compactText(node.summary),
+    tags: tags.length > 0 ? tags : [label],
+    emojis: unique(node.emojis.filter(Boolean)).slice(0, 3)
+  };
 }
 
 function normalizeMatches(value: unknown) {
@@ -659,7 +741,7 @@ function normalizeNewState(value: unknown): NewStateCandidate | null {
   return {
     label: compactText(candidate.label),
     summary: compactText(candidate.summary),
-    tags: normalizeStringArray(candidate.tags, 4),
+    tags: sanitizeTagList(normalizeStringArray(candidate.tags, 4), 4),
     emojis: normalizeStringArray(candidate.emojis, 3)
   };
 }
@@ -813,7 +895,12 @@ export function buildStateNodeFromCandidate(
   candidate: NewStateCandidate,
   existingNodes: StateNode[]
 ): StateNode {
-  const baseId = slugify(candidate.label);
+  const cleanedTags = sanitizeTagList(candidate.tags, 4);
+  const inferredEmotions = cleanedTags
+    .map((tag) => normalizeEmotionLabel(tag))
+    .filter((label): label is EmotionLabel => label !== null);
+  const cleanLabel = sanitizeStateLabel(candidate.label, cleanedTags, inferredEmotions);
+  const baseId = slugify(cleanLabel);
   let id = baseId;
   let suffix = 2;
 
@@ -824,9 +911,9 @@ export function buildStateNodeFromCandidate(
 
   return {
     id,
-    label: compactText(candidate.label),
+    label: cleanLabel,
     summary: compactText(candidate.summary),
-    tags: unique(candidate.tags.map((tag) => compactText(tag)).filter(Boolean)).slice(0, 4),
+    tags: cleanedTags.length > 0 ? cleanedTags : [cleanLabel],
     emojis:
       candidate.emojis && candidate.emojis.length > 0
         ? unique(candidate.emojis).slice(0, 3)
@@ -865,12 +952,17 @@ export function suggestNewState(
       .map((fragment) => fragment.label)
       .filter((value) => value !== "fragmented state")
   );
-  const topTokens = tokens.slice(0, 3);
-  const labelParts = fragmentLabels.length > 0 ? fragmentLabels : emotionTags;
-  const label = labelParts.length > 0 ? labelParts.join(", ") : topTokens.slice(0, 2).join(" ") || "fragmented state";
-  const tags = unique(
-    [...fragmentLabels, ...emotionTags, ...topTokens].filter(Boolean)
-  ).slice(0, 4);
+  const topTokens = tokens.filter((token) => !TAG_FILLER_TERMS.has(token)).slice(0, 3);
+  const labelParts = sanitizeTagList(
+    fragmentLabels.length > 0 ? fragmentLabels : emotionTags,
+    3
+  );
+  const label =
+    labelParts.length > 0 ? labelParts.join(", ") : topTokens.slice(0, 2).join(" ") || "fragmented state";
+  const tags = sanitizeTagList(
+    [...fragmentLabels, ...emotionTags, ...topTokens].filter(Boolean),
+    4
+  );
   const emojis = unique(
     [
       ...fragments.map((fragment) => fragment.emoji),

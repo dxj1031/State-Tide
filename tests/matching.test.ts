@@ -6,7 +6,9 @@ import { extractEmoji, findSimilarEntries, tokenize } from "../lib/matching.ts";
 import {
   buildStateNodeFromCandidate,
   heuristicClassifyState,
-  parseClassificationResponse
+  isEmotionVocabularyLabel,
+  parseClassificationResponse,
+  suggestNewState
 } from "../lib/state-classification.ts";
 import {
   build_relatedness_graph,
@@ -24,7 +26,7 @@ test("tokenize removes punctuation and common filler words", () => {
 });
 
 test("tokenize drops 'this' as a filler token", () => {
-  assert.deepEqual(tokenize("This felt uncertain today."), ["felt", "uncertain"]);
+  assert.deepEqual(tokenize("This felt uncertain today."), ["uncertain"]);
 });
 
 test("extractEmoji returns distinct emoji markers from input", () => {
@@ -74,6 +76,24 @@ test("heuristic classification keeps emotion labels in the allowed set", () => {
   assert.notEqual(result.record.situation, "I felt nervous when I decided to participate in a hackathon");
 });
 
+test("emotion vocabulary validator rejects filler and context words", () => {
+  assert.equal(isEmotionVocabularyLabel("nervous"), true);
+  assert.equal(isEmotionVocabularyLabel("overwhelmed"), true);
+  assert.equal(isEmotionVocabularyLabel("feel"), false);
+  assert.equal(isEmotionVocabularyLabel("really"), false);
+  assert.equal(isEmotionVocabularyLabel("work"), false);
+  assert.equal(isEmotionVocabularyLabel("tonight"), false);
+});
+
+test("suggestNewState drops filler words from generated tags", () => {
+  const result = suggestNewState("I feel really really nervous about this.");
+
+  assert.ok(result.tags.includes("nervous"));
+  assert.equal(result.tags.includes("feel"), false);
+  assert.equal(result.tags.includes("really"), false);
+  assert.equal(result.label.includes("feel"), false);
+});
+
 test("parseClassificationResponse accepts fenced JSON and normalizes invalid emotions", () => {
   const result = parseClassificationResponse(
     '```json\n{"situation":"joining a hackathon","automatic_thought":"I might not be good enough.","emotion_labels":["nervous","sluggish","when"],"emotion_intensity":5,"behavior":null}\n```',
@@ -95,7 +115,7 @@ test("parseClassificationResponse still honors explicit similarity payloads", ()
   );
 
   assert.equal(result.stateKey, "detached-restless");
-  assert.equal(result.label, "detached, restless");
+  assert.equal(result.label, "detached restless");
   assert.equal(result.matches[0]?.score, 0.83);
   assert.equal(result.record.situation, "late at night");
   assert.deepEqual(result.record.emotion_labels, ["drained", "nervous"]);

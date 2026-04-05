@@ -188,8 +188,7 @@ export default function HomePage() {
       const prefix = [
         ...nextClassification.emojis,
         nextClassification.label,
-        ...nextClassification.record.tags,
-        ...nextClassification.fragments.flatMap((fragment) => fragment.evidence)
+        ...nextClassification.record.tags
       ].join(" ");
       setQuery(`${prefix} ${draft}`.trim());
     } catch {
