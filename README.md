@@ -148,5 +148,4 @@ npm test
 - This is not a therapy app.
 - It does not recommend what the user should do.
 - It does not rank behaviors.
-- It does not require camera, microphone, or passive sensing.
 - The main insight is recurrence with interruption, not continuity.
