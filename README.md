@@ -1,161 +1,64 @@
-# State Tides
+# Judge Paw
 
-State Tides is a lightweight Next.js prototype for showing that a mental or emotional state is not continuous over time.
+Judge Paw is a fictional mini-court demo for emotionally literate couple argument judgments.
 
-The app takes a short fragmented note, looks for similar past entries in a local longitudinal dataset, and presents:
+The demo captures a live argument between two people, blends it with built-in case history, and returns a playful courtroom-inspired ruling with:
 
-- a calm `Analysis` view with structured state inference
-- related past fragments
-- a dot-based timeline with visible gaps
-- a lightweight `Next Action` reflection flow showing that responses vary
+- a verdict
+- responsibility split
+- key evidence
+- emotional logic
+- an `OBJECTION!` escalation moment
+- repair orders
+- a Judge Paw stamp
 
-The product message is evidence-based rather than advisory:
-
-> This state appeared before, but it was not continuous.
+Important: the demo uses public celebrity names as fictional placeholders. It is not a claim about real people, real private conversations, or real relationship dynamics.
 
 ## Stack
 
 - Next.js 15
 - TypeScript
 - React 19
-- local JSON demo data
 - Claude API integration with local fallback
-
-## What The Prototype Does
-
-When a user submits a short note, the app:
-
-1. sends the text to `/api/classify-state`
-2. infers a structured internal state record
-3. compares it against known state nodes
-4. uses Claude if available, otherwise falls back to local heuristics
-5. finds similar past entries from local demo data
-6. visualizes recurrence and discontinuity on a timeline
-7. lets the user record a lightweight `next_action`
-8. shows that past responses were not always the same
 
 ## Local Setup
 
-### 1. Install dependencies
-
 ```bash
 npm install
-```
-
-### 2. Configure environment variables
-
-Copy `.env.example` to `.env.local` and add your own Anthropic API key:
-
-```env
-ANTHROPIC_API_KEY=your-real-anthropic-api-key
-ANTHROPIC_MODEL=claude-sonnet-4-20250514
-```
-
-Important notes:
-
-- `.env.example` is only a template
-- `.env.local` is the file Next.js actually reads during local development
-- do not commit `.env.local`
-
-### 3. Run the app
-
-```bash
 npm run dev
 ```
 
-Then open:
+Open:
 
 ```txt
 http://127.0.0.1:3000
 ```
 
-If you want the same host/port used during local testing in this repo:
+For the local review port used in this workspace:
 
 ```bash
-npm run dev -- --hostname 127.0.0.1 --port 3002
+npm run dev -- --hostname 127.0.0.1 --port 3005
 ```
 
-## Claude API Behavior
+## Claude Behavior
 
-The prototype is already wired to call Claude through:
+The judgment route is:
 
-- `app/api/classify-state/route.ts`
+- `app/api/judge-paw/route.ts`
 
-Claude is used only as the semantic layer. It helps:
+If `ANTHROPIC_API_KEY` is available, the app asks Claude for a structured verdict. If the API key is missing or the request fails, the app uses a deterministic local fallback so the demo remains reviewable.
 
-- infer strict JSON state records with:
-  - `situation`
-  - `automatic_thought`
-  - `emotion_labels`
-  - `emotion_intensity`
-  - `behavior`
-- compare a new note against existing state nodes
-- score similarity to multiple states
-- decide whether the note is novel enough to create a new state
+## Demo Flow
 
-### Expected runtime behavior
-
-- If `ANTHROPIC_API_KEY` is present and the account has available credits, the app will use Claude.
-- If the API key is missing, invalid, rate-limited, or out of credits, the app automatically falls back to the local heuristic implementation.
-
-This means the prototype still works end-to-end without external API availability.
-
-## Internal Data Model
-
-The app keeps a hidden structured state schema behind the UI. That schema includes fields such as:
-
-- `situation`
-- `automatic_thought`
-- `emotion_labels`
-- `emotion_intensity`
-- `behavior`
-- `alternative_framing`
-- `tags`
-- `similar_states`
-- `is_novel`
-- `next_action`
-
-This structure is used internally for inference and comparison. It is not exposed as a CBT worksheet UI.
-
-## Demo Data
-
-The repo uses local anonymized synthetic data for the demo:
-
-- `data/journal-entries.json`
-- `data/state-nodes.json`
-
-Note:
-
-- `data/state-nodes.json` can change locally during runtime when a note is classified as novel
-- for clean demos or commits, restore that file before committing if you do not want runtime-generated state nodes in git
-
-The dataset is designed to show:
-
-- recurrence
-- gaps
-- discontinuity
-- variation in next actions
+1. Start from a preloaded fictional argument.
+2. Add more lines from either participant.
+3. Watch the tension meter update.
+4. Click `Judge`.
+5. Review the verdict, objection moment, evidence, responsibility split, emotional logic, and repair order.
 
 ## Scripts
 
 ```bash
-npm run dev
-npm run build
 npm test
+npm run build
 ```
-
-## Project Structure
-
-- `app/page.tsx`: main prototype UI
-- `app/api/classify-state/route.ts`: Claude/fallback classification endpoint
-- `lib/state-classification.ts`: internal state inference and parsing
-- `lib/state-tides-service.ts`: similarity and timeline helpers
-- `lib/matching.ts`: local similarity matching
-- `tests/matching.test.ts`: lightweight test coverage
-
-## Notes For Demo Use
-
-- This is not a therapy app.
-- It does not recommend what the user should do.
-- It does not rank behaviors.
-- The main insight is recurrence with interruption, not continuity.

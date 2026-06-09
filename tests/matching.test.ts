@@ -115,7 +115,7 @@ test("parseClassificationResponse still honors explicit similarity payloads", ()
   );
 
   assert.equal(result.stateKey, "detached-restless");
-  assert.equal(result.label, "detached restless");
+  assert.equal(result.label, "detached, restless");
   assert.equal(result.matches[0]?.score, 0.83);
   assert.equal(result.record.situation, "late at night");
   assert.deepEqual(result.record.emotion_labels, ["drained", "nervous"]);

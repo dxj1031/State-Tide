@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "State Tides",
-  description: "A minimal journal recurrence prototype focused on gaps and discontinuity."
+  title: "Judge Paw",
+  description: "A fictional mini-court demo for emotionally literate couple argument judgments."
 };
 
 export default function RootLayout({
