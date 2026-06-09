@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import entries from "@/data/journal-entries.json";
 import { extractEmoji, type RelatedEntry } from "@/lib/matching";
@@ -245,6 +246,13 @@ export default function HomePage() {
 
   return (
     <main className="page-shell">
+      <nav className="top-nav" aria-label="Primary navigation">
+        <Link href="/">State Tides</Link>
+        <Link href="/dreams/incubate">Incubate</Link>
+        <Link href="/dreams">Dream Gallery</Link>
+        <Link href="/settings">Settings</Link>
+      </nav>
+
       <section className="panel input-panel">
         <form onSubmit={onSubmit} className="journal-form">
           <div className="input-heading">
@@ -408,6 +416,9 @@ export default function HomePage() {
                       <span>{Math.round(entry.score * 100)}% overlap</span>
                     </div>
                     <p className="entry-text">{entry.text}</p>
+                    <Link className="inline-detail-link" href={`/entries/${entry.id}`}>
+                      Open CBT entry
+                    </Link>
                     <p className="meta-line">
                       Shared terms: {[...entry.emojiOverlap, ...entry.overlap].join(", ")}
                     </p>
@@ -573,6 +584,9 @@ export default function HomePage() {
                 <p className="summary-line">
                   {formatDate(selectedPoint.entry.date)}: {selectedPoint.entry.text}
                 </p>
+                <Link className="inline-detail-link" href={`/entries/${selectedPoint.entry.id}`}>
+                  Open CBT entry
+                </Link>
                 {selectedPoint.entry.nextRelatedDate ? (
                   <p className="summary-line">
                     Next related entry on {formatDate(selectedPoint.entry.nextRelatedDate)}.

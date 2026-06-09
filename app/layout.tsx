@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "State Tides",
-  description: "A minimal journal recurrence prototype focused on gaps and discontinuity."
+  description: "A journal recurrence prototype with CBT traces, state tides, and dream incubation."
 };
 
 export default function RootLayout({

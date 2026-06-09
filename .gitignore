@@ -5,3 +5,6 @@ node_modules/
 dist/
 coverage/
 *.log
+data/*.sqlite
+data/*.sqlite-*
+data/*.db

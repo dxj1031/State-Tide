@@ -8,10 +8,15 @@ The app takes a short fragmented note, looks for similar past entries in a local
 - related past fragments
 - a dot-based timeline with visible gaps
 - a lightweight `Next Action` reflection flow showing that responses vary
+- CBT detail pages for historical fragments
+- a dream incubation flow that turns a selected state tide into a stable `DreamSeed`
+- a saved dream gallery with text, image-prompt, and music-prompt outputs
 
 The product message is evidence-based rather than advisory:
 
 > This state appeared before, but it was not continuous.
+
+The dream layer keeps the same evidence boundary. It uses CBT traces and emotional trajectories to generate metaphorical dream artifacts. It does not present dreams as diagnosis, prediction, or luck-based interpretation.
 
 ## Stack
 
@@ -19,6 +24,7 @@ The product message is evidence-based rather than advisory:
 - TypeScript
 - React 19
 - local JSON demo data
+- local SQLite dream store
 - Claude API integration with local fallback
 
 ## What The Prototype Does
@@ -33,6 +39,14 @@ When a user submits a short note, the app:
 6. visualizes recurrence and discontinuity on a timeline
 7. lets the user record a lightweight `next_action`
 8. shows that past responses were not always the same
+
+The dream incubation flow also lets a user:
+
+1. manually brush a timeline range or choose one of up to three recommended cycles
+2. review a concrete token estimate before LLM incubation
+3. generate one output from one `DreamSeed`
+4. translate that seed across text, image prompt, and music prompt without changing the core imagery cluster
+5. save feedback and optionally apply it to future style memory
 
 ## Local Setup
 
@@ -77,9 +91,11 @@ npm run dev -- --hostname 127.0.0.1 --port 3002
 
 ## Claude API Behavior
 
-The prototype is already wired to call Claude through:
+The prototype is wired to call Claude through:
 
 - `app/api/classify-state/route.ts`
+- `app/api/dreams/incubate/route.ts`
+- `app/api/dreams/[id]/outputs/route.ts`
 
 Claude is used only as the semantic layer. It helps:
 
@@ -100,6 +116,8 @@ Claude is used only as the semantic layer. It helps:
 
 This means the prototype still works end-to-end without external API availability.
 
+Dream incubation uses Claude only for `DreamSeed` and prompt/text generation. Real image and music generation providers are intentionally not configured in this MVP; the code keeps a unified media generation interface for later integration.
+
 ## Internal Data Model
 
 The app keeps a hidden structured state schema behind the UI. That schema includes fields such as:
@@ -116,6 +134,15 @@ The app keeps a hidden structured state schema behind the UI. That schema includ
 - `next_action`
 
 This structure is used internally for inference and comparison. It is not exposed as a CBT worksheet UI.
+
+The dream layer stores:
+
+- `DreamSeed`: cycle, source fragments, imagery cluster, emotional trajectory, explanation layer, token estimate
+- `DreamOutput`: text dream, image prompt, or music prompt
+- `DreamFeedback`: fit score, style feedback, and user-approved application scope
+- `DreamStyleMemory`: global tone, symbol, style, and fit preferences
+
+Local dream data is stored in `data/state-tides-dreams.sqlite`, which is ignored by git.
 
 ## Demo Data
 
@@ -143,6 +170,15 @@ npm run dev
 npm run build
 npm test
 ```
+
+## Routes
+
+- `/`: State Tides input, matching, gaps, and next action flow
+- `/entries/[id]`: CBT detail page for one source fragment
+- `/dreams/incubate`: timeline brush, cycle recommendations, token approval, and dream incubation
+- `/dreams`: saved dream gallery
+- `/dreams/[id]`: dream detail, explanation layer, source links, output translation, and feedback
+- `/settings`: generation settings and global style memory
 
 ## Project Structure
 
