@@ -139,10 +139,14 @@ The dataset is designed to show:
 ## Scripts
 
 ```bash
+npm run accept
 npm run dev
 npm run build
 npm test
 ```
+
+`npm run accept` runs the tests and production build, starts the app at
+`http://127.0.0.1:3002`, and opens the acceptance page in your browser.
 
 ## Project Structure
 

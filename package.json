@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "accept": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/acceptance.ps1",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
