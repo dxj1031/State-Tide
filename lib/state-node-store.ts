@@ -40,10 +40,18 @@ export async function loadStateNodes() {
     .map((node) => sanitizeStateNode(node));
 }
 
+// Best-effort: serverless hosting gives the route a read-only filesystem, so a
+// failed write must not take the response down with it. The caller already has
+// the new node in memory and returns it either way; persistence is only for
+// local runs.
 export async function saveStateNodes(nodes: StateNode[]) {
-  await fs.writeFile(
-    STATE_NODES_PATH,
-    JSON.stringify(nodes.map((node) => sanitizeStateNode(node)), null, 2),
-    "utf8"
-  );
+  try {
+    await fs.writeFile(
+      STATE_NODES_PATH,
+      JSON.stringify(nodes.map((node) => sanitizeStateNode(node)), null, 2),
+      "utf8"
+    );
+  } catch (error) {
+    console.warn("state-node-store: could not persist state nodes", error);
+  }
 }
