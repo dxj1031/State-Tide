@@ -1545,3 +1545,240 @@ button:hover {
     font-size: 0.6rem;
   }
 }
+
+/* ── Runtime panel ─────────────────────────────────────────────────────────
+   Makes the structuring pipeline visible: each stage streams in from the route
+   as it happens, with real timings and per-field provenance. */
+.runtime-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.runtime-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.runtime-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.runtime-title {
+  margin: 4px 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.runtime-badge {
+  font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+
+.runtime-badge-anthropic {
+  background: var(--accent-soft);
+  border-color: rgba(35, 68, 59, 0.3);
+  color: var(--accent);
+}
+
+.runtime-badge-heuristic {
+  background: rgba(31, 35, 33, 0.05);
+  color: var(--muted);
+}
+
+.runtime-stages {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 20px;
+  display: grid;
+  gap: 16px;
+  border-left: 1px solid var(--line);
+}
+
+.runtime-stage {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+
+.runtime-stage::before {
+  content: "";
+  position: absolute;
+  left: -25px;
+  top: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--surface-strong);
+  border: 1.5px solid var(--accent);
+}
+
+.runtime-stage.is-degraded::before {
+  border-color: var(--muted);
+  background: var(--muted);
+}
+
+.runtime-stage-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.runtime-stage-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.runtime-stage-time {
+  font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.runtime-note {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.runtime-fields {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.runtime-field {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255, 252, 247, 0.6);
+}
+
+.runtime-field dt {
+  font: 500 10px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.runtime-field dd {
+  margin: 0;
+  font: 600 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--ink);
+}
+
+.runtime-provenance {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.runtime-provenance li {
+  display: grid;
+  grid-template-columns: 62px 138px 1fr;
+  align-items: baseline;
+  gap: 10px;
+  font: 400 11.5px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.runtime-origin {
+  text-align: center;
+  padding: 2px 0;
+  border-radius: 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.runtime-origin-llm {
+  background: var(--accent);
+  color: var(--surface-strong);
+}
+
+.runtime-origin-local {
+  background: rgba(31, 35, 33, 0.08);
+  color: var(--muted);
+}
+
+.runtime-prov-field {
+  color: var(--muted);
+}
+
+.runtime-prov-value {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.runtime-guards {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.runtime-code {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(31, 35, 33, 0.035);
+  font: 400 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--ink);
+  max-height: 190px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.runtime-stage.is-pending .runtime-stage-name {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.runtime-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: runtimePulse 1s ease-in-out infinite;
+}
+
+@keyframes runtimePulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .runtime-pulse { animation: none; opacity: 0.7; }
+}
+
+@media (max-width: 640px) {
+  .runtime-provenance li {
+    grid-template-columns: 56px 1fr;
+  }
+
+  .runtime-prov-value {
+    grid-column: 2;
+  }
+}

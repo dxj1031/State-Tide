@@ -108,7 +108,7 @@ type ClassificationOverrides = {
 };
 
 const FALLBACK_EMOJI = "\u{1FAE8}";
-const NOVELTY_THRESHOLD = 0.42;
+export const NOVELTY_THRESHOLD = 0.42;
 
 export const EMOTION_EMOJIS: Record<EmotionLabel, string> = {
   anxious: "\u{1F61F}",
@@ -801,7 +801,7 @@ function normalizeAnalysisRecord(value: Record<string, unknown>, fallbackText: s
   };
 }
 
-function stripJsonFences(text: string) {
+export function stripJsonFences(text: string) {
   const trimmed = text.trim();
   const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
   return fenced ? fenced[1].trim() : trimmed;

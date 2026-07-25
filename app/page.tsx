@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import entries from "@/data/journal-entries.json";
 import { extractEmoji, type RelatedEntry } from "@/lib/matching";
+import type { TraceEvent } from "@/lib/pipeline-trace";
 import {
   EMOTION_EMOJIS,
   type ClassificationResult
@@ -144,6 +145,8 @@ export default function HomePage() {
   const [showNextPanel, setShowNextPanel] = useState(false);
   const [nextActionDraft, setNextActionDraft] = useState("");
   const [actionFeedbackVisible, setActionFeedbackVisible] = useState(false);
+  const [trace, setTrace] = useState<TraceEvent[]>([]);
+  const [showRuntime, setShowRuntime] = useState(true);
   const [submittedNextAction, setSubmittedNextAction] = useState<{
     action: string;
     timestamp: string;
@@ -170,6 +173,7 @@ export default function HomePage() {
     setSubmittedNextAction(null);
     setActionFeedbackVisible(false);
     setIsClassifying(true);
+    setTrace([]);
 
     try {
       const response = await fetch("/api/classify-state", {
@@ -178,11 +182,47 @@ export default function HomePage() {
         body: JSON.stringify({ text: draft })
       });
 
-      if (!response.ok) {
+      if (!response.ok || !response.body) {
         throw new Error("Classification failed.");
       }
 
-      const nextClassification = (await response.json()) as ClassificationResult;
+      // NDJSON: one trace event per line, appended as it arrives so the runtime
+      // panel fills in live. The terminating event carries the result.
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let nextClassification: ClassificationResult | null = null;
+
+      for (;;) {
+        const { value, done } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.trim()) {
+            continue;
+          }
+
+          const event = JSON.parse(line) as TraceEvent;
+
+          if (event.result) {
+            nextClassification = event.result;
+          }
+
+          setTrace((current) => [...current, event]);
+        }
+      }
+
+      if (!nextClassification) {
+        throw new Error("Stream ended without a result.");
+      }
+
       setClassification(nextClassification);
 
       const prefix = [
@@ -237,6 +277,7 @@ export default function HomePage() {
         .join(", ")
     : "Unclear";
   const isWorking = isClassifying || isSearching;
+  const engineBadge = trace.find((event) => event.stage === "done")?.result?.source ?? null;
   const statusText = isClassifying
     ? "Structuring the note into an internal state record..."
     : isSearching
@@ -268,6 +309,96 @@ export default function HomePage() {
           </div>
         </form>
       </section>
+
+      {trace.length > 0 ? (
+        <section className="panel runtime-panel">
+          <div className="runtime-header">
+            <div>
+              <p className="section-label">Runtime</p>
+              <h2 className="runtime-title">Structuring pipeline</h2>
+            </div>
+            <div className="runtime-header-right">
+              {engineBadge ? (
+                <span className={`runtime-badge runtime-badge-${engineBadge}`}>{engineBadge}</span>
+              ) : null}
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setShowRuntime((current) => !current)}
+                aria-expanded={showRuntime}
+              >
+                {showRuntime ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+
+          {showRuntime ? (
+            <ol className="runtime-stages">
+              {trace.map((event, index) => (
+                <li
+                  key={`${event.stage}-${index}`}
+                  className={`runtime-stage ${event.ok === false ? "is-degraded" : ""}`}
+                >
+                  <div className="runtime-stage-head">
+                    <span className="runtime-stage-name">{event.title}</span>
+                    <span className="runtime-stage-time">+{event.at} ms</span>
+                  </div>
+
+                  {event.note ? <p className="runtime-note">{event.note}</p> : null}
+
+                  {event.fields ? (
+                    <dl className="runtime-fields">
+                      {event.fields.map((field, fieldIndex) => (
+                        <div className="runtime-field" key={`${field.k}-${fieldIndex}`}>
+                          <dt>{field.k}</dt>
+                          <dd>{field.v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : null}
+
+                  {event.provenance ? (
+                    <ul className="runtime-provenance">
+                      {event.provenance.map((entry) => (
+                        <li key={entry.field}>
+                          <span className={`runtime-origin runtime-origin-${entry.source}`}>
+                            {entry.source}
+                          </span>
+                          <span className="runtime-prov-field">{entry.field}</span>
+                          <span className="runtime-prov-value">{entry.value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+
+                  {event.guards && event.guards.length > 0 ? (
+                    <ul className="runtime-guards">
+                      {event.guards.map((guard) => (
+                        <li key={guard}>{guard}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+
+                  {event.code ? <pre className="runtime-code">{event.code}</pre> : null}
+                </li>
+              ))}
+
+              {isClassifying ? (
+                <li className="runtime-stage is-pending">
+                  <div className="runtime-stage-head">
+                    <span className="runtime-stage-name">
+                      {trace[trace.length - 1]?.stage === "request"
+                        ? "Awaiting the model..."
+                        : "Working..."}
+                    </span>
+                    <span className="runtime-pulse" aria-hidden="true" />
+                  </div>
+                </li>
+              ) : null}
+            </ol>
+          ) : null}
+        </section>
+      ) : null}
 
       {isWorking ? (
         <section className="panel search-panel">
