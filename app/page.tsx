@@ -297,6 +297,7 @@ export default function HomePage() {
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             rows={4}
+            maxLength={600}
             placeholder="Example: Detached again. Hard to begin anything. Everything feels slowed."
           />
           <div className="form-row">

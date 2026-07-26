@@ -8,6 +8,7 @@ import {
   type ClassificationResult
 } from "@/lib/state-classification";
 import { explainNormalization, type TraceEvent } from "@/lib/pipeline-trace";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { loadStateNodes, saveStateNodes } from "@/lib/state-node-store";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
@@ -15,6 +16,12 @@ const ANTHROPIC_VERSION = "2023-06-01";
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 const MAX_TOKENS = 250;
 const TEMPERATURE = 0;
+
+// The endpoint is public and unauthenticated, and every call spends real money.
+// max_tokens caps the response; these cap the request, which is the side an
+// attacker controls. A state note is one or two sentences by design.
+const MAX_INPUT_CHARS = 600;
+const rateLimiter = createRateLimiter({ windowMs: 60_000, max: 8 });
 
 const SYSTEM_PROMPT =
   "You are a function that returns ONLY valid JSON. Do NOT output explanations. Do NOT output natural language outside JSON. Do NOT add extra fields. Do NOT wrap the JSON in markdown. Return exactly one JSON object with this schema: {\"situation\":\"string | null\",\"automatic_thought\":\"string | null\",\"emotion_labels\":[\"anxious\"|\"nervous\"|\"overwhelmed\"|\"sad\"|\"drained\"|\"frustrated\"|\"uncertain\"|\"neutral\"],\"emotion_intensity\":0,\"behavior\":\"string | null\"}. Rules: emotion_labels must contain only values from that enum. Before returning each emotion label, check that it is actually emotion vocabulary, not a situation word, action, intensifier, pronoun, or filler. Invalid examples include feel, felt, this, work, really, avoided, hackathon, tonight. If no clear emotion is present, return [\"neutral\"]. situation must be a short phrase, not a full sentence. automatic_thought must be the likely internal belief, not the situation. behavior must describe what the user did, avoided, or implied doing; if unclear use null. emotion_intensity must be an integer 0 to 10 and default to 5 if uncertain. Output valid JSON only.";
@@ -25,10 +32,33 @@ const SYSTEM_PROMPT =
  * last event carries the ClassificationResult under `result`.
  */
 export async function POST(request: NextRequest) {
+  // x-real-ip is stamped by Vercel's proxy; the leftmost x-forwarded-for entry
+  // is whatever the client claimed, so it is only a local-dev fallback. Reading
+  // x-forwarded-for first would let an attacker rotate the header and skip the
+  // limiter entirely.
+  const clientKey =
+    request.headers.get("x-real-ip")?.trim() ||
+    request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ||
+    "unknown";
+
+  if (!rateLimiter.check(clientKey)) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
   const { text } = (await request.json()) as { text?: string };
 
   if (!text || typeof text !== "string") {
     return NextResponse.json({ error: "Text is required." }, { status: 400 });
+  }
+
+  if (text.length > MAX_INPUT_CHARS) {
+    return NextResponse.json(
+      { error: `Note is too long. Keep it under ${MAX_INPUT_CHARS} characters.` },
+      { status: 413 }
+    );
   }
 
   const started = Date.now();
