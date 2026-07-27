@@ -7,6 +7,7 @@ import {
   buildStateNodeFromCandidate,
   heuristicClassifyState,
   isEmotionVocabularyLabel,
+  looksLikeNoise,
   parseClassificationResponse,
   suggestNewState
 } from "../lib/state-classification.ts";
@@ -149,8 +150,12 @@ test("relatedness graph centers the current note and adds surrounding nodes", ()
 });
 
 test("heuristic classification creates a novel state when overlap is weak", () => {
+  // Shares no vocabulary with any state in the corpus. The previous input here
+  // ("bright, brittle, ceremonial") in fact overlapped the bright-brittle state
+  // completely — it only looked weak because the old score divided by the union
+  // of both token sets, which grew with the length of the note.
   const result = heuristicClassifyState(
-    "Bright, brittle, ceremonial focus with static under it.",
+    "Salt air, gulls overhead, warm planks underfoot.",
     stateNodes
   );
 
@@ -160,6 +165,43 @@ test("heuristic classification creates a novel state when overlap is weak", () =
 
   const newNode = buildStateNodeFromCandidate(result.newState!, stateNodes);
   assert.ok(newNode.id.length > 0);
+});
+
+test("a note restating a known state is a recurrence, not a new state", () => {
+  const result = heuristicClassifyState(
+    "Bright, brittle, ceremonial focus with static under it.",
+    stateNodes
+  );
+
+  assert.equal(result.isNovel, false);
+  assert.equal(result.newState, null);
+});
+
+test("buildStateNodeFromCandidate reuses a known state instead of cloning it", () => {
+  const existing = stateNodes[0];
+  const node = buildStateNodeFromCandidate(
+    { label: existing.label, summary: "a different summary", tags: existing.tags },
+    stateNodes
+  );
+
+  // Used to mint `${id}-2`, `-3`, … on every collision; the shipped corpus had
+  // 21 nodes sharing one label because of it.
+  assert.equal(node.id, existing.id);
+  assert.equal(/-\d+$/.test(node.id), false);
+  assert.equal(stateNodes.some((n) => n.id === node.id), true);
+});
+
+test("noise screen rejects placeholder text but keeps real notes", () => {
+  for (const junk of ["aaaaaa", "asdf", "ha ha ha ha", "ok", "  "]) {
+    assert.equal(looksLikeNoise(junk), true, junk);
+  }
+
+  for (const real of [
+    "Nervous about the demo tomorrow.",
+    "Detached again tonight, hard to begin."
+  ]) {
+    assert.equal(looksLikeNoise(real), false, real);
+  }
 });
 
 test("findSimilarEntries reports trailing absence after the last related entry", () => {

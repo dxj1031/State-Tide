@@ -108,7 +108,10 @@ type ClassificationOverrides = {
 };
 
 const FALLBACK_EMOJI = "\u{1FAE8}";
-export const NOVELTY_THRESHOLD = 0.42;
+// Calibrated against the demo corpus: best-match identity scores land in two
+// clusters, at/below 0.333 and at/above 0.400. 0.38 sits in the gap, so it does
+// not flip on rounding the way a threshold sitting on 0.40 would.
+export const NOVELTY_THRESHOLD = 0.38;
 
 export const EMOTION_EMOJIS: Record<EmotionLabel, string> = {
   anxious: "\u{1F61F}",
@@ -826,8 +829,11 @@ function buildClassificationResult(
     (stateNodes.length > 0 &&
       (strongestMatch === null || strongestMatch.score < NOVELTY_THRESHOLD) &&
       tokenize(scoringQuery).length > 1);
+  // A zero score is no overlap at all. Without this the top of the sorted list
+  // was reported as the match even when nothing matched, so a screened-out note
+  // came back claiming to be whichever state happened to sort first.
   const matchedNode =
-    !shouldCreateNovelState && strongestMatch
+    !shouldCreateNovelState && strongestMatch && strongestMatch.score > 0
       ? stateNodes.find((node) => node.id === strongestMatch.state_id || node.label === strongestMatch.label) ?? null
       : null;
   const newState =
@@ -900,13 +906,20 @@ export function buildStateNodeFromCandidate(
     .map((tag) => normalizeEmotionLabel(tag))
     .filter((label): label is EmotionLabel => label !== null);
   const cleanLabel = sanitizeStateLabel(candidate.label, cleanedTags, inferredEmotions);
-  const baseId = slugify(cleanLabel);
-  let id = baseId;
-  let suffix = 2;
+  const id = slugify(cleanLabel);
 
-  while (existingNodes.some((node) => node.id === id)) {
-    id = `${baseId}-${suffix}`;
-    suffix += 1;
+  // A state the corpus already holds is a recurrence, not a new state. This
+  // used to append -2, -3, … on collision, which manufactured a fresh state
+  // every time the same one came back — the corpus ended up with 21 nodes all
+  // labelled "detached, restless, drained". Returning the existing node also
+  // makes the callers' `some(node => node.id === newNode.id)` guard skip the
+  // write, so nothing is persisted for a recurrence.
+  const existing = existingNodes.find(
+    (node) => node.id === id || node.label === cleanLabel
+  );
+
+  if (existing) {
+    return existing;
   }
 
   return {
@@ -921,16 +934,24 @@ export function buildStateNodeFromCandidate(
   };
 }
 
+/**
+ * How much of the state's identity is present in the note.
+ *
+ * Scored over label + tags only, and divided by the state's own token count
+ * rather than the union of both sides. The previous union denominator grew with
+ * note length, so on the demo corpus the best match any note could reach was
+ * 0.364 — below the 0.42 novelty threshold, which made every note "novel" and
+ * filled the corpus with 21 copies of one state. The summary is dropped for the
+ * same reason: it is descriptive prose that adds tokens without adding anything
+ * that distinguishes one state from another.
+ */
 export function scoreStateNode(input: string, node: StateNode): StateMatch {
   const inputTokens = tokenize(input);
-  const stateTokens = unique(
-    tokenize(node.label)
-      .concat(tokenize(node.summary))
-      .concat(node.tags.flatMap((tag) => tokenize(tag)))
+  const identityTokens = unique(
+    tokenize(node.label).concat(node.tags.flatMap((tag) => tokenize(tag)))
   );
-  const overlap = stateTokens.filter((token) => inputTokens.includes(token));
-  const union = new Set([...inputTokens, ...stateTokens]).size || 1;
-  const score = overlap.length === 0 ? 0 : overlap.length / union;
+  const overlap = identityTokens.filter((token) => inputTokens.includes(token));
+  const score = overlap.length === 0 ? 0 : overlap.length / identityTokens.length;
 
   return {
     state_id: node.id,
@@ -983,12 +1004,49 @@ export function suggestNewState(
   };
 }
 
+/**
+ * True when the note carries no state worth recording — a test string, mashed
+ * keys, or a fragment too thin to infer anything from. Cheap and local, so the
+ * caller can skip the paid model call entirely rather than pay to classify
+ * "asdf" and then store the result as a state.
+ */
+export function looksLikeNoise(input: string): boolean {
+  const compact = compactText(input);
+
+  if (compact.length < 3) {
+    return true;
+  }
+
+  // "aaaaaa", ".....", "ha ha ha ha" — one character or one word, repeated.
+  if (/^(.)\1*$/.test(compact.replace(/\s+/g, ""))) {
+    return true;
+  }
+
+  const words = compact.toLowerCase().split(/\s+/).filter(Boolean);
+
+  if (words.length > 1 && new Set(words).size === 1) {
+    return true;
+  }
+
+  // tokenize() already drops stop words and 1-2 character tokens, so what is
+  // left is the note's actual content. One token is not a state.
+  return tokenize(compact).length < 2;
+}
+
 export function heuristicClassifyState(
   input: string,
-  stateNodes: StateNode[] = []
+  stateNodes: StateNode[] = [],
+  options: { allowNewState?: boolean } = {}
 ): ClassificationResult {
   const analysis = inferStructuredStateAnalysis(input);
-  return buildClassificationResult(input, analysis, stateNodes, "heuristic");
+
+  return buildClassificationResult(
+    input,
+    analysis,
+    stateNodes,
+    "heuristic",
+    options.allowNewState === false ? { isNovel: false, newState: null } : {}
+  );
 }
 
 export function parseClassificationResponse(
@@ -1009,6 +1067,10 @@ export function parseClassificationResponse(
   const hasMatches = Object.prototype.hasOwnProperty.call(parsed, "matches");
   const hasNewState = Object.prototype.hasOwnProperty.call(parsed, "new_state");
   const hasIsNovel = Object.prototype.hasOwnProperty.call(parsed, "is_novel");
+  // The model is asked for this on the same call that does the classification,
+  // so screening out stateless notes costs no extra request. Only an explicit
+  // false suppresses the new state — a missing field means "not screened".
+  const carriesNoState = parsed.carries_state === false;
   const normalizedMatches = normalizeMatches(parsed.matches);
   const normalizedNewState = normalizeNewState(parsed.new_state);
   const emojiOverrides = normalizeStringArray(parsed.emojis, 3);
@@ -1016,8 +1078,12 @@ export function parseClassificationResponse(
   const tagOverrides = normalizeStringArray(recordValue.tags, 6);
   const result = buildClassificationResult(resolvedInput, analysis, stateNodes, "anthropic", {
     matches: hasMatches ? normalizedMatches : undefined,
-    newState: hasNewState ? normalizedNewState : undefined,
-    isNovel: hasIsNovel && typeof parsed.is_novel === "boolean" ? parsed.is_novel : undefined,
+    newState: carriesNoState ? null : hasNewState ? normalizedNewState : undefined,
+    isNovel: carriesNoState
+      ? false
+      : hasIsNovel && typeof parsed.is_novel === "boolean"
+        ? parsed.is_novel
+        : undefined,
     label: typeof parsed.label === "string" ? compactText(parsed.label) : undefined,
     stateKey: typeof parsed.stateKey === "string" ? parsed.stateKey : undefined,
     emojis: emojiOverrides.length > 0 ? emojiOverrides : undefined,

@@ -7,6 +7,7 @@ import {
 export type TraceStage =
   | "input"
   | "state-nodes"
+  | "screen"
   | "contract"
   | "request"
   | "response"

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   buildStateNodeFromCandidate,
   heuristicClassifyState,
+  looksLikeNoise,
   NOVELTY_THRESHOLD,
   parseClassificationResponse,
   stripJsonFences,
@@ -26,7 +27,7 @@ const MAX_INPUT_CHARS = 600;
 const rateLimiter = createRateLimiter({ windowMs: 60_000, max: 8 });
 
 const SYSTEM_PROMPT =
-  "You are a function that returns ONLY valid JSON. Do NOT output explanations. Do NOT output natural language outside JSON. Do NOT add extra fields. Do NOT wrap the JSON in markdown. Return exactly one JSON object with this schema: {\"situation\":\"string | null\",\"automatic_thought\":\"string | null\",\"emotion_labels\":[\"anxious\"|\"nervous\"|\"overwhelmed\"|\"sad\"|\"drained\"|\"frustrated\"|\"uncertain\"|\"neutral\"],\"emotion_intensity\":0,\"behavior\":\"string | null\"}. Rules: emotion_labels must contain only values from that enum. Before returning each emotion label, check that it is actually emotion vocabulary, not a situation word, action, intensifier, pronoun, or filler. Invalid examples include feel, felt, this, work, really, avoided, hackathon, tonight. If no clear emotion is present, return [\"neutral\"]. situation must be a short phrase, not a full sentence. automatic_thought must be the likely internal belief, not the situation. behavior must describe what the user did, avoided, or implied doing; if unclear use null. emotion_intensity must be an integer 0 to 10 and default to 5 if uncertain. Output valid JSON only.";
+  "You are a function that returns ONLY valid JSON. Do NOT output explanations. Do NOT output natural language outside JSON. Do NOT add extra fields. Do NOT wrap the JSON in markdown. Return exactly one JSON object with this schema: {\"situation\":\"string | null\",\"automatic_thought\":\"string | null\",\"emotion_labels\":[\"anxious\"|\"nervous\"|\"overwhelmed\"|\"sad\"|\"drained\"|\"frustrated\"|\"uncertain\"|\"neutral\"],\"emotion_intensity\":0,\"behavior\":\"string | null\",\"carries_state\":true}. Rules: carries_state must be false when the note describes no inner state a person could recognise later — placeholder or test text, mashed keys, a bare greeting, or a fact with no experience attached. When in doubt return true. emotion_labels must contain only values from that enum. Before returning each emotion label, check that it is actually emotion vocabulary, not a situation word, action, intensifier, pronoun, or filler. Invalid examples include feel, felt, this, work, really, avoided, hackathon, tonight. If no clear emotion is present, return [\"neutral\"]. situation must be a short phrase, not a full sentence. automatic_thought must be the likely internal belief, not the situation. behavior must describe what the user did, avoided, or implied doing; if unclear use null. emotion_intensity must be an integer 0 to 10 and default to 5 if uncertain. Output valid JSON only.";
 
 /**
  * Streams the classification pipeline as newline-delimited JSON so the client can
@@ -122,6 +123,23 @@ async function runPipeline(text: string, emit: Emit) {
     note: "Read from data/state-nodes.json — the corpus new notes get scored against.",
     fields: [{ k: "nodes", v: String(stateNodes.length) }]
   });
+
+  // Screened locally, before the paid call: there is nothing to classify in a
+  // test string, and storing it as a state would pollute the corpus every
+  // future note is scored against.
+  if (looksLikeNoise(text)) {
+    emit({
+      stage: "screen",
+      title: "No state in the note — skipping the model",
+      ok: false,
+      note: "Too thin to infer a state from. No API call is made and no state is recorded.",
+      fields: [{ k: "engine", v: "heuristic" }]
+    });
+
+    return finish(heuristicClassifyState(text, stateNodes, { allowNewState: false }), stateNodes, emit, {
+      llmSupplied: false
+    });
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const model = process.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL;
