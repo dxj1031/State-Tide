@@ -48,7 +48,7 @@ Copy `.env.example` to `.env.local` and add your own Anthropic API key:
 
 ```env
 ANTHROPIC_API_KEY=your-real-anthropic-api-key
-ANTHROPIC_MODEL=claude-sonnet-4-20250514
+ANTHROPIC_MODEL=claude-haiku-4-5
 ```
 
 Important notes:

@@ -13,7 +13,9 @@ import { loadStateNodes, saveStateNodes } from "@/lib/state-node-store";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
-const DEFAULT_MODEL = "claude-sonnet-4-20250514";
+// Haiku is sized to the job: one short note in, a fixed ~250-token JSON record
+// out. It also keeps the per-call cost of the public endpoint at its lowest.
+const DEFAULT_MODEL = "claude-haiku-4-5";
 const MAX_TOKENS = 250;
 const TEMPERATURE = 0;
 
