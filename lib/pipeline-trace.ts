@@ -36,6 +36,10 @@ export type TraceEvent = {
   code?: string;
   provenance?: TraceProvenance[];
   guards?: string[];
+  /** Scored states, for the novelty chart. Values are 0..1. */
+  scores?: Array<{ label: string; value: number }>;
+  /** Novelty threshold the scores are read against. */
+  threshold?: number;
   /** false marks a degraded-but-handled step, e.g. the fallback. */
   ok?: boolean;
   /** Only on the terminating "done" event. */

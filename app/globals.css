@@ -1782,3 +1782,140 @@ button:hover {
     grid-column: 2;
   }
 }
+
+/* ── Runtime charts ────────────────────────────────────────────────────────
+   Palette validated with the dataviz validator against this surface (#fffdf9):
+   emphasis #009170 and status #c2571f separate by ΔE 10.3 under deuteranopia
+   (target >= 8) and 23.9 with normal vision; the de-emphasis grey clears 3:1.
+   Both charts are emphasis form — one hue plus grey — because in each the story
+   is a single mark, not a set of equal series. Every bar is also directly
+   labelled, so identity never rests on colour alone. */
+.viz {
+  --viz-emphasis: #009170;
+  --viz-degraded: #c2571f;
+  --viz-quiet: #8a8f88;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(255, 252, 247, 0.6);
+  display: grid;
+  gap: 11px;
+}
+
+.viz-caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.viz-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.viz-meta {
+  font: 500 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--muted);
+}
+
+.viz-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.viz-row {
+  display: grid;
+  grid-template-columns: 96px 1fr 62px;
+  align-items: center;
+  gap: 10px;
+}
+
+.viz-label,
+.viz-value {
+  font: 400 10.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.viz-value {
+  text-align: right;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* The track is the full domain: total elapsed for latency, a fixed 0–1 for
+   scores, so bar lengths stay comparable from one request to the next. */
+.viz-track {
+  position: relative;
+  display: flex;
+  block-size: 13px;
+  border-radius: 4px;
+  background: rgba(31, 35, 33, 0.055);
+  overflow: hidden;
+}
+
+.viz-bar {
+  display: block;
+  block-size: 100%;
+  min-inline-size: 2px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  background: var(--viz-quiet);
+}
+
+.viz-bar[data-emphasis="true"] {
+  background: var(--viz-emphasis);
+}
+
+.viz-bar[data-degraded="true"] {
+  background: var(--viz-degraded);
+}
+
+/* Threshold rule: the line the novelty decision is actually made against. */
+.viz-rows-threshold .viz-track::after {
+  content: "";
+  position: absolute;
+  inset-block: -2px;
+  inset-inline-start: var(--threshold);
+  inline-size: 2px;
+  background: var(--ink);
+  opacity: 0.42;
+}
+
+.runtime-empty {
+  display: grid;
+  gap: 12px;
+}
+
+.runtime-empty-rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.runtime-empty-rail li {
+  padding: 5px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  font: 500 10px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+@media (max-width: 640px) {
+  .viz-row {
+    grid-template-columns: 74px 1fr 52px;
+    gap: 7px;
+  }
+}

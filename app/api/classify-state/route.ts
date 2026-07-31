@@ -343,16 +343,16 @@ async function finish(
     title: result.isNovel ? "Scored as novel — new state created" : "Matched an existing state",
     note: `Every known state is scored against the note; below ${NOVELTY_THRESHOLD} the note becomes a new state.`,
     fields: [
-      { k: "threshold", v: String(NOVELTY_THRESHOLD) },
       { k: "scored against", v: `${stateNodes.length} states` },
-      { k: "state key", v: result.stateKey },
-      // state_id, not label — several states share a label and only the id
-      // identifies which one a score belongs to.
-      ...result.matches.slice(0, 4).map((match) => ({
-        k: match.state_id,
-        v: match.score.toFixed(3)
-      }))
-    ]
+      { k: "state key", v: result.stateKey }
+    ],
+    // state_id, not label — several states can share a label and only the id
+    // identifies which one a score belongs to.
+    scores: result.matches.slice(0, 8).map((match) => ({
+      label: match.state_id,
+      value: match.score
+    })),
+    threshold: NOVELTY_THRESHOLD
   });
 
   const persisted = await persistNovelStateIfNeeded(result, stateNodes);

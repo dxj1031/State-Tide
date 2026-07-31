@@ -278,6 +278,28 @@ export default function HomePage() {
     : "Unclear";
   const isWorking = isClassifying || isSearching;
   const engineBadge = trace.find((event) => event.stage === "done")?.result?.source ?? null;
+
+  // Stage durations for the latency chart. Events carry elapsed-since-start, so
+  // a stage lasts until the next one begins; the terminal stage has no span.
+  const latency = useMemo(() => {
+    if (trace.length === 0) {
+      return null;
+    }
+
+    const total = trace[trace.length - 1].at || 1;
+    const spans = trace.map((event, index) => ({
+      title: event.title,
+      stage: event.stage,
+      degraded: event.ok === false,
+      start: event.at,
+      ms: (trace[index + 1]?.at ?? event.at) - event.at
+    }));
+    const slowest = Math.max(...spans.map((s) => s.ms));
+
+    return { total, spans, slowest };
+  }, [trace]);
+
+  const scoreEvent = trace.find((event) => event.scores && event.scores.length > 0) ?? null;
   const statusText = isClassifying
     ? "Structuring the note into an internal state record..."
     : isSearching
@@ -311,8 +333,7 @@ export default function HomePage() {
         </form>
       </section>
 
-      {trace.length > 0 ? (
-        <section className="panel runtime-panel">
+      <section className="panel runtime-panel">
           <div className="runtime-header">
             <div>
               <p className="section-label">Runtime</p>
@@ -322,18 +343,96 @@ export default function HomePage() {
               {engineBadge ? (
                 <span className={`runtime-badge runtime-badge-${engineBadge}`}>{engineBadge}</span>
               ) : null}
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setShowRuntime((current) => !current)}
-                aria-expanded={showRuntime}
-              >
-                {showRuntime ? "Hide" : "Show"}
-              </button>
+              {trace.length > 0 ? (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setShowRuntime((current) => !current)}
+                  aria-expanded={showRuntime}
+                >
+                  {showRuntime ? "Hide" : "Show"}
+                </button>
+              ) : null}
             </div>
           </div>
 
-          {showRuntime ? (
+          {trace.length === 0 ? (
+            <div className="runtime-empty">
+              <p className="runtime-note">
+                Submit a note to trace it end to end: the schema the model is held to, the
+                call itself, which fields survived validation, and how the note scores
+                against every state already on file.
+              </p>
+              <ul className="runtime-empty-rail" aria-hidden="true">
+                {["input", "state nodes", "contract", "model call", "validation", "scoring"].map(
+                  (label) => (
+                    <li key={label}>{label}</li>
+                  )
+                )}
+              </ul>
+            </div>
+          ) : showRuntime ? (
+            <>
+              {latency ? (
+                <figure className="viz">
+                  <figcaption className="viz-caption">
+                    <span className="viz-title">Where the time went</span>
+                    <span className="viz-meta">{latency.total} ms total</span>
+                  </figcaption>
+                  <ul className="viz-rows">
+                    {latency.spans.map((span, index) => (
+                      <li className="viz-row" key={`${span.stage}-${index}`}>
+                        <span className="viz-label">{span.stage}</span>
+                        <span className="viz-track">
+                          <span
+                            className="viz-bar"
+                            style={{
+                              // Clamp the offset so a stage that starts at the very
+                              // end still shows its 2px minimum instead of being
+                              // clipped away by the track's overflow.
+                              marginInlineStart: `min(calc(100% - 2px), ${(span.start / latency.total) * 100}%)`,
+                              inlineSize: `max(2px, ${(span.ms / latency.total) * 100}%)`
+                            }}
+                            data-emphasis={span.ms === latency.slowest && span.ms > 0}
+                            data-degraded={span.degraded}
+                          />
+                        </span>
+                        <span className="viz-value">{span.ms} ms</span>
+                      </li>
+                    ))}
+                  </ul>
+                </figure>
+              ) : null}
+
+              {scoreEvent?.scores && scoreEvent.threshold !== undefined ? (
+                <figure className="viz">
+                  <figcaption className="viz-caption">
+                    <span className="viz-title">Novelty scoring</span>
+                    <span className="viz-meta">
+                      scale 0–1 · new state below {scoreEvent.threshold}
+                    </span>
+                  </figcaption>
+                  <ul
+                    className="viz-rows viz-rows-threshold"
+                    style={{ ["--threshold" as string]: `${scoreEvent.threshold * 100}%` }}
+                  >
+                    {scoreEvent.scores.map((score) => (
+                      <li className="viz-row" key={score.label}>
+                        <span className="viz-label">{score.label}</span>
+                        <span className="viz-track">
+                          <span
+                            className="viz-bar"
+                            style={{ inlineSize: `max(2px, ${score.value * 100}%)` }}
+                            data-emphasis={score.value >= scoreEvent.threshold!}
+                          />
+                        </span>
+                        <span className="viz-value">{score.value.toFixed(3)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </figure>
+              ) : null}
+
             <ol className="runtime-stages">
               {trace.map((event, index) => (
                 <li
@@ -397,9 +496,9 @@ export default function HomePage() {
                 </li>
               ) : null}
             </ol>
+            </>
           ) : null}
         </section>
-      ) : null}
 
       {isWorking ? (
         <section className="panel search-panel">
