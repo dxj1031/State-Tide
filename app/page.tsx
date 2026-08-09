@@ -322,6 +322,9 @@ export default function HomePage() {
           <div className="input-heading">
             <p className="eyebrow">State Tides</p>
             <h1>Enter a short state note.</h1>
+            <p className="input-deck">
+              Trace how a feeling returns, what surrounds it, and where the pattern breaks.
+            </p>
           </div>
           <label className="journal-label" htmlFor="journal-entry">
             What is happening right now?

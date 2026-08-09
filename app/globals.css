@@ -77,7 +77,7 @@ button {
 }
 
 .page-shell {
-  width: min(1080px, calc(100% - 28px));
+  width: min(1160px, calc(100% - 28px));
   margin: 0 auto;
   padding: 38px 0 64px;
 }
@@ -104,6 +104,9 @@ button {
 .input-heading {
   display: grid;
   gap: 10px;
+  align-content: start;
+  padding-right: 28px;
+  border-right: 1px solid var(--line);
 }
 
 .input-heading h1,
@@ -117,6 +120,19 @@ button {
   text-wrap: balance;
 }
 
+.input-heading h1 {
+  font-size: clamp(2.35rem, 4.6vw, 4.2rem);
+}
+
+.input-deck {
+  max-width: 28ch;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
 .panel {
   border: 1px solid var(--line);
   background: var(--surface);
@@ -126,13 +142,27 @@ button {
 }
 
 .input-panel {
-  padding: 22px;
+  padding: 30px;
   margin-bottom: 18px;
+  background:
+    radial-gradient(circle at 8% 14%, rgba(205, 226, 219, 0.34), transparent 30%),
+    var(--surface);
 }
 
 .journal-form {
   display: grid;
-  gap: 14px;
+  grid-template-columns: minmax(240px, 0.72fr) minmax(0, 1.6fr);
+  column-gap: 30px;
+  row-gap: 14px;
+}
+
+.journal-form .input-heading {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+}
+
+.journal-form > :not(.input-heading) {
+  grid-column: 2;
 }
 
 .journal-form textarea {
@@ -144,7 +174,7 @@ button {
   background: var(--surface-strong);
   color: var(--ink);
   line-height: 1.6;
-  min-height: 132px;
+  min-height: 184px;
 }
 
 .journal-form textarea:focus-visible {
@@ -199,6 +229,12 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.form-row .hint {
+  max-width: 42ch;
+  margin: 0;
+  line-height: 1.45;
 }
 
 button {
@@ -1567,6 +1603,26 @@ textarea:focus-visible {
 }
 
 @media (max-width: 900px) {
+  .journal-form {
+    grid-template-columns: 1fr;
+  }
+
+  .journal-form .input-heading,
+  .journal-form > :not(.input-heading) {
+    grid-column: 1;
+  }
+
+  .journal-form .input-heading {
+    grid-row: auto;
+    padding: 0 0 20px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .input-deck {
+    max-width: 52ch;
+  }
+
   .results-grid {
     grid-template-columns: 1fr;
   }
@@ -1609,6 +1665,7 @@ textarea:focus-visible {
   }
 
   .input-panel,
+  .runtime-panel,
   .summary-panel,
   .matches-panel,
   .timeline-panel,
@@ -1643,6 +1700,15 @@ textarea:focus-visible {
 .runtime-panel {
   display: grid;
   gap: 18px;
+  padding: 22px;
+  margin-bottom: 18px;
+  min-width: 0;
+}
+
+#runtime-content {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
 }
 
 .runtime-header {
