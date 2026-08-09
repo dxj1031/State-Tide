@@ -30,8 +30,50 @@ body {
 }
 
 button,
+input,
 textarea {
   font: inherit;
+}
+
+button,
+a,
+input,
+textarea {
+  -webkit-tap-highlight-color: rgba(35, 68, 59, 0.14);
+}
+
+button {
+  touch-action: manipulation;
+}
+
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 20;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--surface-strong);
+  font-family: "Segoe UI", sans-serif;
+  transform: translateY(-160%);
+  transition: transform 140ms ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .page-shell {
@@ -72,6 +114,7 @@ textarea {
   line-height: 0.96;
   font-weight: 600;
   letter-spacing: -0.04em;
+  text-wrap: balance;
 }
 
 .panel {
@@ -102,12 +145,52 @@ textarea {
   color: var(--ink);
   line-height: 1.6;
   min-height: 132px;
-  outline: none;
 }
 
-.journal-form textarea:focus {
+.journal-form textarea:focus-visible {
   border-color: rgba(35, 68, 59, 0.45);
   box-shadow: 0 0 0 4px rgba(35, 68, 59, 0.09);
+  outline: 2px solid transparent;
+}
+
+.journal-label {
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.input-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.input-meta .hint {
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.45;
+}
+
+.character-count {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font: 500 0.72rem/1 "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.form-notice {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(143, 90, 31, 0.24);
+  border-radius: 14px;
+  background: rgba(255, 242, 218, 0.72);
+  color: #68451f;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .form-row {
@@ -139,6 +222,14 @@ button:disabled {
 button:hover {
   opacity: 0.94;
   transform: translateY(-1px);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(35, 68, 59, 0.42);
+  outline-offset: 3px;
 }
 
 .secondary-button {
@@ -312,12 +403,12 @@ button:hover {
   padding: 12px 14px;
   background: rgba(255, 253, 249, 0.98);
   color: var(--ink);
-  outline: none;
 }
 
-.next-action-form input:focus {
+.next-action-form input:focus-visible {
   border-color: rgba(35, 68, 59, 0.45);
   box-shadow: 0 0 0 4px rgba(35, 68, 59, 0.08);
+  outline: 2px solid transparent;
 }
 
 .next-action-chips {
@@ -1770,7 +1861,18 @@ button:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .runtime-pulse { animation: none; opacity: 0.7; }
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .runtime-pulse {
+    opacity: 0.7;
+  }
 }
 
 @media (max-width: 640px) {

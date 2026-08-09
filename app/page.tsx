@@ -140,6 +140,7 @@ export default function HomePage() {
   const [isClassifying, setIsClassifying] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [hoveredPointId, setHoveredPointId] = useState<string | null>(null);
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
   const [showNextPanel, setShowNextPanel] = useState(false);
@@ -165,6 +166,7 @@ export default function HomePage() {
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitNotice(null);
     setShowResults(false);
     setHoveredPointId(null);
     setSelectedPointId(null);
@@ -234,6 +236,9 @@ export default function HomePage() {
     } catch {
       setClassification(null);
       setQuery(draft);
+      setSubmitNotice(
+        "Live structuring is unavailable right now. Showing local recurrence results instead."
+      );
     } finally {
       setIsClassifying(false);
       setIsSearching(true);
@@ -301,43 +306,67 @@ export default function HomePage() {
 
   const scoreEvent = trace.find((event) => event.scores && event.scores.length > 0) ?? null;
   const statusText = isClassifying
-    ? "Structuring the note into an internal state record..."
+    ? "Structuring the note into an internal state record…"
     : isSearching
-      ? "Looking for recurrence, gaps, and nearby states..."
+      ? "Looking for recurrence, gaps, and nearby states…"
       : null;
 
   return (
-    <main className="page-shell">
+    <>
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
+      <main className="page-shell" id="main-content">
       <section className="panel input-panel">
         <form onSubmit={onSubmit} className="journal-form">
           <div className="input-heading">
             <p className="eyebrow">State Tides</p>
             <h1>Enter a short state note.</h1>
           </div>
+          <label className="journal-label" htmlFor="journal-entry">
+            What is happening right now?
+          </label>
           <textarea
             id="journal-entry"
+            name="journal-entry"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             rows={4}
             maxLength={600}
-            placeholder="Example: Detached again. Hard to begin anything. Everything feels slowed."
+            autoComplete="off"
+            aria-describedby="journal-entry-help journal-entry-count"
+            required
+            placeholder="Example: Detached again. Hard to begin anything. Everything feels slowed…"
           />
+          <div className="input-meta">
+            <p className="hint" id="journal-entry-help">
+              Describe the moment in your own words. No special format is needed.
+            </p>
+            <span className="character-count" id="journal-entry-count">
+              {draft.length}/600
+            </span>
+          </div>
           <div className="form-row">
             <button type="submit" disabled={isWorking}>
-              {isWorking ? "Tracing..." : "Trace recurrence"}
+              {isWorking ? "Tracing…" : "Trace recurrence"}
             </button>
             <p className="hint">
               The app uses a hidden thought-record structure to infer states, links, and gaps.
             </p>
           </div>
+          {submitNotice ? (
+            <p className="form-notice" role="status" aria-live="polite">
+              {submitNotice}
+            </p>
+          ) : null}
         </form>
       </section>
 
-      <section className="panel runtime-panel">
+      <section className="panel runtime-panel" aria-labelledby="runtime-title">
           <div className="runtime-header">
             <div>
               <p className="section-label">Runtime</p>
-              <h2 className="runtime-title">Structuring pipeline</h2>
+              <h2 className="runtime-title" id="runtime-title">Structuring pipeline</h2>
             </div>
             <div className="runtime-header-right">
               {engineBadge ? (
@@ -349,6 +378,7 @@ export default function HomePage() {
                   className="secondary-button"
                   onClick={() => setShowRuntime((current) => !current)}
                   aria-expanded={showRuntime}
+                  aria-controls="runtime-content"
                 >
                   {showRuntime ? "Hide" : "Show"}
                 </button>
@@ -372,7 +402,7 @@ export default function HomePage() {
               </ul>
             </div>
           ) : showRuntime ? (
-            <>
+            <div id="runtime-content" aria-live="polite">
               {latency ? (
                 <figure className="viz">
                   <figcaption className="viz-caption">
@@ -488,20 +518,20 @@ export default function HomePage() {
                   <div className="runtime-stage-head">
                     <span className="runtime-stage-name">
                       {trace[trace.length - 1]?.stage === "request"
-                        ? "Awaiting the model..."
-                        : "Working..."}
+                        ? "Awaiting the model…"
+                        : "Working…"}
                     </span>
                     <span className="runtime-pulse" aria-hidden="true" />
                   </div>
                 </li>
               ) : null}
             </ol>
-            </>
+            </div>
           ) : null}
         </section>
 
       {isWorking ? (
-        <section className="panel search-panel">
+        <section className="panel search-panel" role="status" aria-live="polite" aria-atomic="true">
           <div className="search-header">
             <p className="section-label">Searching</p>
             <h2>{statusText}</h2>
@@ -562,23 +592,27 @@ export default function HomePage() {
                     type="button"
                     className="secondary-button next-button"
                     onClick={() => setShowNextPanel((current) => !current)}
+                    aria-expanded={showNextPanel}
+                    aria-controls="next-action-form"
                   >
-                    Next
+                    Plan next action
                   </button>
                   {actionFeedbackVisible ? <span className="next-action-pulse" aria-hidden="true" /> : null}
                 </div>
 
                 {showNextPanel ? (
-                  <form className="next-action-form" onSubmit={onNextActionSubmit}>
+                  <form className="next-action-form" id="next-action-form" onSubmit={onNextActionSubmit}>
                     <label className="next-action-label" htmlFor="next-action-input">
                       What did you do next?
                     </label>
                     <input
                       id="next-action-input"
+                      name="next-action"
                       type="text"
                       value={nextActionDraft}
                       onChange={(event) => setNextActionDraft(event.target.value)}
-                      placeholder="Rest, stop working, go outside..."
+                      autoComplete="off"
+                      placeholder="Rest, stop working, go outside…"
                     />
                     <div className="next-action-chips" role="list" aria-label="Quick actions">
                       {quickActions.map((action) => (
@@ -589,21 +623,22 @@ export default function HomePage() {
                             nextActionDraft.toLowerCase() === action.toLowerCase() ? "is-active" : ""
                           }`}
                           onClick={() => setNextActionDraft(action)}
+                          aria-pressed={nextActionDraft.toLowerCase() === action.toLowerCase()}
                         >
                           {action}
                         </button>
                       ))}
                     </div>
                     <div className="next-action-actions">
-                      <button type="submit" className="secondary-button">
-                        Save
+                      <button type="submit" className="secondary-button" disabled={!nextActionDraft.trim()}>
+                        Save next action
                       </button>
                     </div>
                   </form>
                 ) : null}
 
                 {submittedNextAction ? (
-                  <div className="next-action-comparison">
+                  <div className="next-action-comparison" aria-live="polite">
                     <p className="section-label">Next Action</p>
                     <div className="next-action-current">
                       <span>This time:</span>
@@ -767,9 +802,12 @@ export default function HomePage() {
                     style={{ left: `${point.x}%` }}
                     onMouseEnter={() => setHoveredPointId(point.entry.id)}
                     onFocus={() => setHoveredPointId(point.entry.id)}
+                    onBlur={() => setHoveredPointId(null)}
                     onClick={() =>
                       setSelectedPointId((current) => (current === point.entry.id ? null : point.entry.id))
                     }
+                    aria-label={`${formatDate(point.entry.date)}: ${point.entry.text}`}
+                    aria-pressed={isSelected}
                   >
                     <span className="dot-point-core">{point.emoji}</span>
                   </button>
@@ -833,6 +871,7 @@ export default function HomePage() {
           </p>
         </section>
       ) : null}
-    </main>
+      </main>
+    </>
   );
 }
