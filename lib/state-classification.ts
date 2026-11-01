@@ -1056,6 +1056,9 @@ export function parseClassificationResponse(
 ): ClassificationResult {
   const cleaned = stripJsonFences(text);
   const parsed = JSON.parse(cleaned) as Record<string, unknown>;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Classification response must be a JSON object.");
+  }
   const recordValue =
     parsed.record && typeof parsed.record === "object"
       ? (parsed.record as Record<string, unknown>)

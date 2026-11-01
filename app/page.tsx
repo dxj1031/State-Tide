@@ -9,6 +9,7 @@ import {
   type ClassificationResult
 } from "@/lib/state-classification";
 import {
+  build_retrieval_query,
   find_similar_entries,
   retrieve_timeline
 } from "@/lib/state-tides-service";
@@ -194,6 +195,7 @@ export default function HomePage() {
       const decoder = new TextDecoder();
       let buffer = "";
       let nextClassification: ClassificationResult | null = null;
+      let usedFallback = false;
 
       for (;;) {
         const { value, done } = await reader.read();
@@ -213,6 +215,10 @@ export default function HomePage() {
 
           const event = JSON.parse(line) as TraceEvent;
 
+          if (event.stage === "fallback") {
+            usedFallback = true;
+          }
+
           if (event.result) {
             nextClassification = event.result;
           }
@@ -226,13 +232,13 @@ export default function HomePage() {
       }
 
       setClassification(nextClassification);
+      if (usedFallback) {
+        setSubmitNotice(
+          "Live structuring is unavailable. Showing a local interpretation and recurrence results."
+        );
+      }
 
-      const prefix = [
-        ...nextClassification.emojis,
-        nextClassification.label,
-        ...nextClassification.record.tags
-      ].join(" ");
-      setQuery(`${prefix} ${draft}`.trim());
+      setQuery(build_retrieval_query(draft, nextClassification));
     } catch {
       setClassification(null);
       setQuery(draft);
@@ -354,7 +360,7 @@ export default function HomePage() {
               {isWorking ? "Tracing…" : "Trace recurrence"}
             </button>
             <p className="hint">
-              The app uses a hidden thought-record structure to infer states, links, and gaps.
+              Demo history is synthetic. Next actions reset on refresh.
             </p>
           </div>
           {submitNotice ? (
@@ -557,7 +563,7 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      {showResults && hasResults ? (
+      {showResults ? (
         <>
           <section className="results-grid">
             <article className="panel summary-panel">
@@ -660,7 +666,11 @@ export default function HomePage() {
                         </button>
                       ))}
                     </div>
-                    <p className="next-action-note">You&apos;ve responded differently before.</p>
+                    <p className="next-action-note">
+                      {pastActionComparisons.length > 0
+                        ? "You've responded differently before."
+                        : "This action stays in this page until refresh."}
+                    </p>
                   </div>
                 ) : null}
               </div>
@@ -668,7 +678,12 @@ export default function HomePage() {
 
             <article className="panel matches-panel">
               <p className="section-label">Top 3 similar entries</p>
-              <h2>You&apos;ve felt this before.</h2>
+              <h2>{hasResults ? "Related records from the demo." : "No related entries found."}</h2>
+              {!hasResults ? (
+                <p className="hint">
+                  No shared words or emoji were found in this demo history. This does not mean the feeling never occurred.
+                </p>
+              ) : null}
               <div className="matches">
                 {topMatches.map((entry) => (
                   <div key={entry.id} className="match-card">
@@ -687,7 +702,9 @@ export default function HomePage() {
                             entry.gapDays === 1 ? "" : "s"
                           }.`
                         ) : (
-                          "A related entry appears again the next day."
+                          entry.nextRelatedDate === entry.date
+                            ? "A related entry appears again on the same day."
+                            : "A related entry appears again the next day."
                         )
                       ) : entry.hasTrailingAbsence ? (
                         `After this, nothing similar was recorded for ${entry.daysWithoutRelatedAfter} day${
@@ -703,7 +720,7 @@ export default function HomePage() {
             </article>
           </section>
 
-          <section className="panel timeline-panel result-enter">
+          {hasResults ? <section className="panel timeline-panel result-enter">
             <div className="timeline-header">
               <div>
                 <p className="section-label">Timeline</p>
@@ -862,7 +879,7 @@ export default function HomePage() {
               </div>
             ) : null}
 
-          </section>
+          </section> : null}
         </>
       ) : null}
 

@@ -35,6 +35,11 @@ export function find_similar_entries(query: string, entries: JournalEntry[]) {
   return findSimilarEntries(query, entries).topMatches;
 }
 
+/** Generated state markers are display hints, not evidence of shared history. */
+export function build_retrieval_query(input: string, classification: ClassificationResult) {
+  return [classification.label, ...classification.record.tags, input].join(" ").trim();
+}
+
 export function compute_gaps(entries: RelatedEntry[]) {
   return entries.map((entry) => ({
     id: entry.id,

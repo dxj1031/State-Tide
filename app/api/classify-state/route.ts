@@ -19,6 +19,7 @@ const ANTHROPIC_VERSION = "2023-06-01";
 const DEFAULT_MODEL = "claude-haiku-4-5";
 const MAX_TOKENS = 250;
 const TEMPERATURE = 0;
+const MODEL_TIMEOUT_MS = 10_000;
 
 // The endpoint is public and unauthenticated, and every call spends real money.
 // max_tokens caps the response; these cap the request, which is the side an
@@ -51,7 +52,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { text } = (await request.json()) as { text?: string };
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  const text = body && typeof body === "object" && "text" in body ? body.text : undefined;
 
   if (!text || typeof text !== "string") {
     return NextResponse.json({ error: "Text is required." }, { status: 400 });
@@ -178,6 +187,7 @@ async function runPipeline(text: string, emit: Emit) {
   });
 
   const requestStarted = Date.now();
+  const modelSignal = AbortSignal.timeout(MODEL_TIMEOUT_MS);
   let rawText = "";
   let usage: { input_tokens?: number; output_tokens?: number } | undefined;
 
@@ -201,6 +211,7 @@ async function runPipeline(text: string, emit: Emit) {
           }
         ]
       }),
+      signal: modelSignal,
       cache: "no-store"
     });
 
@@ -241,7 +252,12 @@ async function runPipeline(text: string, emit: Emit) {
         "Same structured record, produced by hand-written rules instead. The demo stays end-to-end without the API.",
       fields: [
         { k: "after", v: `${Date.now() - requestStarted} ms` },
-        { k: "reason", v: error instanceof Error ? error.message : String(error) },
+        {
+          k: "reason",
+          v: modelSignal.aborted
+            ? `Model request timed out after ${MODEL_TIMEOUT_MS} ms.`
+            : error instanceof Error ? error.message : String(error)
+        },
         { k: "engine", v: "heuristic" }
       ]
     });

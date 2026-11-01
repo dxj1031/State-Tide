@@ -120,7 +120,7 @@ export function findSimilarEntries(query: string, entries: JournalEntry[]) {
 
   const relatedTimeline = relatedByDate.map((entry, index) => {
     const next = relatedByDate[index + 1];
-    const gapDays = next ? daysBetween(entry.date, next.date) - 1 : null;
+    const gapDays = next ? Math.max(0, daysBetween(entry.date, next.date) - 1) : null;
     const daysWithoutRelatedAfter =
       !next && datasetEndDate ? daysBetween(entry.date, datasetEndDate) : null;
 

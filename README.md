@@ -148,6 +148,46 @@ npm test
 `npm run accept` runs the tests and production build, starts the app at
 `http://127.0.0.1:3002`, and opens the acceptance page in your browser.
 
+### Failure-path regression (no live model)
+
+Validated with Node 24.12.0. `npm test` runs the local unit suite. If the host
+blocks test worker processes, run the same suite with
+`node --test --test-isolation=none --experimental-strip-types tests/**/*.test.ts`.
+
+Build once with `npm run build`. To run the eight HTTP input scenarios, start a
+fresh server in one PowerShell window with `ANTHROPIC_API_KEY` empty, then run
+`tests/classify-state.integration.mjs` against its URL in a second window.
+
+For the eight model-failure scenarios, use the synthetic fixture instead. This
+intercepts model requests locally; the key below is a test label, not a credential.
+Start a fresh server for each suite because the endpoint allows eight requests
+per minute per client.
+
+```powershell
+# Window 1, from the project root
+$env:ANTHROPIC_API_KEY = 'local-synthetic-fixture'
+$env:NEXT_TELEMETRY_DISABLED = '1'
+node --require ./tests/fixtures/model-response.cjs node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3147
+```
+
+```powershell
+# Window 2, from the project root
+$env:STATE_TIDES_TEST_URL = 'http://127.0.0.1:3147'
+$env:STATE_TIDES_TEST_MODEL = '1'
+node --test --test-isolation=none tests/classify-state.reliability.mjs
+```
+
+The model request deadline is ten seconds, including response-body reading;
+timeouts return a completed local fallback result. Non-object model JSON is
+rejected before normalization. The tests cover those paths, synthetic upstream
+rate-limit/credit failures, invalid JSON, and a valid synthetic response. They do
+not measure a live model's accuracy, clinical benefit, or deployment reliability.
+
+Historical matching uses local word/emoji overlap. Only emoji supplied in the
+original note enter the search query; generated display markers do not create
+history matches. Same-day records have zero absent days. Demo history is
+synthetic, and next actions remain in page memory and reset on refresh.
+
 ## Project Structure
 
 - `app/page.tsx`: main prototype UI
@@ -156,6 +196,7 @@ npm test
 - `lib/state-tides-service.ts`: similarity and timeline helpers
 - `lib/matching.ts`: local similarity matching
 - `tests/matching.test.ts`: lightweight test coverage
+- `docs/similarity-and-retrieval.md`: bilingual similarity and retrieval design notes
 
 ## Notes For Demo Use
 
