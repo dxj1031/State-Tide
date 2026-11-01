@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
+import RunPlayback from "@/components/run-playback";
 import entries from "@/data/journal-entries.json";
 import { extractEmoji, type RelatedEntry } from "@/lib/matching";
 import type { TraceEvent } from "@/lib/pipeline-trace";
@@ -10,8 +11,8 @@ import {
 } from "@/lib/state-classification";
 import {
   build_retrieval_query,
-  find_similar_entries,
-  retrieve_timeline
+  retrieve_timeline,
+  type TimelineResponse
 } from "@/lib/state-tides-service";
 
 const samplePrompt = "Detached again tonight. Restless, slowed, hard to begin anything.";
@@ -139,7 +140,6 @@ export default function HomePage() {
   const [query, setQuery] = useState("");
   const [classification, setClassification] = useState<ClassificationResult | null>(null);
   const [isClassifying, setIsClassifying] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [hoveredPointId, setHoveredPointId] = useState<string | null>(null);
@@ -148,14 +148,16 @@ export default function HomePage() {
   const [nextActionDraft, setNextActionDraft] = useState("");
   const [actionFeedbackVisible, setActionFeedbackVisible] = useState(false);
   const [trace, setTrace] = useState<TraceEvent[]>([]);
-  const [showRuntime, setShowRuntime] = useState(true);
+  const [showRuntime, setShowRuntime] = useState(false);
+  const [run, setRun] = useState<{ id: string; startedAt: string } | null>(null);
+  const runStarted = useRef(0);
   const [submittedNextAction, setSubmittedNextAction] = useState<{
     action: string;
     timestamp: string;
   } | null>(null);
 
-  const analysis = useMemo(() => retrieve_timeline(query, entries), [query]);
-  const topMatches = useMemo(() => find_similar_entries(query, entries), [query]);
+  const [analysis, setAnalysis] = useState<TimelineResponse>({ topMatches: [], relatedTimeline: [] });
+  const topMatches = analysis.topMatches;
   const dotTimeline = useMemo(
     () => buildDotTimeline(analysis.relatedTimeline, entries),
     [analysis.relatedTimeline]
@@ -164,6 +166,10 @@ export default function HomePage() {
     () => topMatches.filter((entry) => entry.next_action).slice(0, 3),
     [topMatches]
   );
+
+  const emitClient = (event: Omit<TraceEvent, "at" | "origin">) => {
+    setTrace(current => [...current, { ...event, at: Math.round(performance.now() - runStarted.current), origin: "client" }]);
+  };
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -176,7 +182,11 @@ export default function HomePage() {
     setSubmittedNextAction(null);
     setActionFeedbackVisible(false);
     setIsClassifying(true);
-    setTrace([]);
+    runStarted.current = performance.now();
+    setRun({ id: crypto.randomUUID(), startedAt: new Date().toISOString() });
+    setShowRuntime(false);
+    setTrace([{ stage: "submit", at: 0, origin: "client", title: "A note begins its journey", code: draft, fields: [{ k: "characters", v: String(draft.length) }] }]);
+    let retrievalInput = draft;
 
     try {
       const response = await fetch("/api/classify-state", {
@@ -186,7 +196,10 @@ export default function HomePage() {
       });
 
       if (!response.ok || !response.body) {
-        throw new Error("Classification failed.");
+        const body = await response.json().catch(() => null);
+        const message = typeof body?.error === "string" ? body.error : "Classification failed.";
+        emitClient({ stage: "validation", title: "Request was rejected", ok: false, note: message, fields: [{ k: "HTTP status", v: String(response.status) }] });
+        throw new Error(message);
       }
 
       // NDJSON: one trace event per line, appended as it arrives so the runtime
@@ -223,7 +236,7 @@ export default function HomePage() {
             nextClassification = event.result;
           }
 
-          setTrace((current) => [...current, event]);
+          setTrace((current) => [...current, { ...event, serverAt: event.at, at: Math.round(performance.now() - runStarted.current), origin: "server" }]);
         }
       }
 
@@ -238,18 +251,31 @@ export default function HomePage() {
         );
       }
 
-      setQuery(build_retrieval_query(draft, nextClassification));
-    } catch {
+      retrievalInput = build_retrieval_query(draft, nextClassification);
+    } catch (error) {
       setClassification(null);
-      setQuery(draft);
+      emitClient({ stage: "error", title: "Structured analysis unavailable", ok: false, note: error instanceof Error ? error.message : String(error) });
       setSubmitNotice(
         "Live structuring is unavailable right now. Showing local recurrence results instead."
       );
     } finally {
       setIsClassifying(false);
-      setIsSearching(true);
-      await delay(900);
-      setIsSearching(false);
+      const found = retrieve_timeline(retrievalInput, entries);
+      setQuery(retrievalInput);
+      setAnalysis(found);
+      emitClient({
+        stage: "retrieval", title: found.topMatches.length ? "Historical records ranked" : "No historical matches",
+        code: retrievalInput,
+        note: "Local word and original-emoji overlap; generated display markers are excluded.",
+        fields: [{ k: "scanned", v: String(entries.length) }, { k: "related", v: String(found.relatedTimeline.length) }, { k: "top matches", v: String(found.topMatches.length) }],
+        scores: found.topMatches.map(entry => ({ label: `${entry.date} · ${entry.id}`, value: entry.score }))
+      });
+      const timeline = buildDotTimeline(found.relatedTimeline, entries);
+      emitClient({
+        stage: "timeline", title: timeline.points.length ? "Records unfold across time" : "No timeline to draw",
+        fields: [{ k: "records", v: String(timeline.points.length) }, { k: "gaps", v: String(timeline.gaps.length) }, { k: "status", v: timeline.points.length ? "ready" : "skipped" }],
+        timeline: timeline.points.map(point => ({ date: point.entry.date, gapDays: point.entry.gapDays, x: point.x }))
+      });
       setShowResults(true);
     }
   };
@@ -266,6 +292,7 @@ export default function HomePage() {
       action: normalizedAction,
       timestamp: todayStamp()
     });
+    emitClient({ stage: "action", title: "A next action joins this run", code: normalizedAction, note: "Kept in page memory only; it resets on refresh.", fields: [{ k: "storage", v: "page-only" }] });
     setActionFeedbackVisible(true);
     await delay(420);
     setActionFeedbackVisible(false);
@@ -286,8 +313,8 @@ export default function HomePage() {
     ? classification.record.emotion_labels
         .map((label) => `${EMOTION_EMOJIS[label]} ${label}`)
         .join(", ")
-    : "Unclear";
-  const isWorking = isClassifying || isSearching;
+    : "Unavailable";
+  const isWorking = isClassifying;
   const engineBadge = trace.find((event) => event.stage === "done")?.result?.source ?? null;
 
   // Stage durations for the latency chart. Events carry elapsed-since-start, so
@@ -297,25 +324,22 @@ export default function HomePage() {
       return null;
     }
 
-    const total = trace[trace.length - 1].at || 1;
-    const spans = trace.map((event, index) => ({
+    const execution = trace.filter(event => event.stage !== "action");
+    const total = execution[execution.length - 1].at || 1;
+    const spans = execution.map((event, index) => ({
       title: event.title,
       stage: event.stage,
       degraded: event.ok === false,
       start: event.at,
-      ms: (trace[index + 1]?.at ?? event.at) - event.at
+      ms: (execution[index + 1]?.at ?? event.at) - event.at
     }));
     const slowest = Math.max(...spans.map((s) => s.ms));
 
     return { total, spans, slowest };
   }, [trace]);
 
-  const scoreEvent = trace.find((event) => event.scores && event.scores.length > 0) ?? null;
-  const statusText = isClassifying
-    ? "Structuring the note into an internal state record…"
-    : isSearching
-      ? "Looking for recurrence, gaps, and nearby states…"
-      : null;
+  const scoreEvent = trace.find((event) => event.stage === "score" && event.scores && event.scores.length > 0) ?? null;
+
 
   return (
     <>
@@ -371,11 +395,13 @@ export default function HomePage() {
         </form>
       </section>
 
-      <section className="panel runtime-panel" aria-labelledby="runtime-title">
+      <RunPlayback key={run?.id ?? "ready"} events={trace} running={isWorking} run={run} />
+
+      {trace.length > 0 ? <section className="panel runtime-panel" aria-labelledby="runtime-title">
           <div className="runtime-header">
             <div>
               <p className="section-label">Runtime</p>
-              <h2 className="runtime-title" id="runtime-title">Structuring pipeline</h2>
+              <h2 className="runtime-title" id="runtime-title">Captured event details</h2>
             </div>
             <div className="runtime-header-right">
               {engineBadge ? (
@@ -415,7 +441,7 @@ export default function HomePage() {
               {latency ? (
                 <figure className="viz">
                   <figcaption className="viz-caption">
-                    <span className="viz-title">Where the time went</span>
+                    <span className="viz-title">Execution capture timing</span>
                     <span className="viz-meta">{latency.total} ms total</span>
                   </figcaption>
                   <ul className="viz-rows">
@@ -537,44 +563,21 @@ export default function HomePage() {
             </ol>
             </div>
           ) : null}
-        </section>
-
-      {isWorking ? (
-        <section className="panel search-panel" role="status" aria-live="polite" aria-atomic="true">
-          <div className="search-header">
-            <p className="section-label">Searching</p>
-            <h2>{statusText}</h2>
-          </div>
-          <div className="search-animation" aria-hidden="true">
-            <div className="search-wave">
-              <span>{classification?.emojis[0] ?? markerEmoji}</span>
-            </div>
-            <div className="search-line" />
-            <div className="search-grid">
-              {Array.from({ length: 42 }).map((_, index) => (
-                <span
-                  key={`search-${index}`}
-                  className="search-cell"
-                  style={{ animationDelay: `${index * 30}ms` }}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
+        </section> : null}
 
       {showResults ? (
         <>
           <section className="results-grid">
             <article className="panel summary-panel">
-              <p className="section-label">Analysis</p>
+              <p className="section-label">{classification ? "Analysis" : "Local history only"}</p>
+              {!classification ? <p className="hint">No structured record was returned. Any history below is matched against your original text.</p> : null}
               <div className="reading-grid">
                 <span className="reading-grid-line reading-grid-line-vertical" aria-hidden="true" />
                 <span className="reading-grid-line reading-grid-line-horizontal" aria-hidden="true" />
                 <article className="reading-card">
                   <p className="reading-label">Trigger</p>
                   <p className="reading-value">
-                    {classification?.record.situation ?? draft}
+                    {classification?.record.situation ?? "No structured record was returned."}
                   </p>
                 </article>
                 <article className="reading-card">
@@ -584,13 +587,13 @@ export default function HomePage() {
                 <article className="reading-card">
                   <p className="reading-label">Intensity</p>
                   <p className="reading-value">
-                    {classification?.record.emotion_intensity ?? 0}/10
+                    {classification ? `${classification.record.emotion_intensity}/10` : "Unavailable"}
                   </p>
                 </article>
                 <article className="reading-card">
                   <p className="reading-label">Behavior</p>
                   <p className="reading-value">
-                    {classification?.record.behavior ?? "Not clearly stated."}
+                    {classification ? classification.record.behavior ?? "Not clearly stated." : "Unavailable"}
                   </p>
                 </article>
               </div>

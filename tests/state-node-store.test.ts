@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -16,11 +16,13 @@ test("saveStateNodes swallows write failures instead of taking the route down", 
 
     const { saveStateNodes } = await import("../lib/state-node-store.ts");
 
-    await assert.doesNotReject(() =>
-      saveStateNodes([
+    const nodes = [
         { id: "x", label: "x", summary: "x", tags: ["x"], emojis: ["\u{1F636}"] }
-      ])
-    );
+    ];
+    assert.equal(await saveStateNodes(nodes), false);
+    await mkdir(path.join(empty, "data"));
+    assert.equal(await saveStateNodes(nodes), true);
+    assert.equal(JSON.parse(await readFile(path.join(empty, "data/state-nodes.json"), "utf8"))[0].id, "x");
   } finally {
     process.chdir(original);
   }

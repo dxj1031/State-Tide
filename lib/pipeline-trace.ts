@@ -5,6 +5,8 @@ import {
 } from "./state-classification.ts";
 
 export type TraceStage =
+  | "submit"
+  | "validation"
   | "input"
   | "state-nodes"
   | "screen"
@@ -14,7 +16,12 @@ export type TraceStage =
   | "fallback"
   | "normalize"
   | "score"
-  | "done";
+  | "persistence"
+  | "done"
+  | "retrieval"
+  | "timeline"
+  | "action"
+  | "error";
 
 export type TraceField = { k: string; v: string };
 
@@ -27,7 +34,11 @@ export type TraceProvenance = {
 
 export type TraceEvent = {
   stage: TraceStage;
-  /** Milliseconds since the request entered the route. */
+  origin?: "client" | "server";
+  /** Original server clock when at has been aligned to client receipt time. */
+  serverAt?: number;
+  timeline?: Array<{ date: string; gapDays: number | null; x: number }>;
+  /** Server elapsed milliseconds, or client receipt time after alignment (serverAt retains the server clock). */
   at: number;
   title: string;
   note?: string;

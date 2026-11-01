@@ -124,6 +124,13 @@ async function runPipeline(text: string, emit: Emit) {
     code: text
   });
 
+  emit({
+    stage: "validation",
+    title: "Request passed input checks",
+    note: "JSON body, text type, length, and request limit passed before processing.",
+    fields: [{ k: "characters", v: String(text.length) }, { k: "limit", v: String(MAX_INPUT_CHARS) }]
+  });
+
   const stateNodes = await loadStateNodes();
 
   emit({
@@ -356,8 +363,8 @@ async function finish(
 
   emit({
     stage: "score",
-    title: result.isNovel ? "Scored as novel — new state created" : "Matched an existing state",
-    note: `Every known state is scored against the note; below ${NOVELTY_THRESHOLD} the note becomes a new state.`,
+    title: result.isNovel ? "New state candidate selected" : result.matches.some(match => match.score > 0) ? "Matched an existing state" : "No state match — new-state creation skipped",
+    note: `Identity-word coverage is compared with ${NOVELTY_THRESHOLD}; input screening and explicit flags also affect the decision.`,
     fields: [
       { k: "scored against", v: `${stateNodes.length} states` },
       { k: "state key", v: result.stateKey }
@@ -371,7 +378,7 @@ async function finish(
     threshold: NOVELTY_THRESHOLD
   });
 
-  const persisted = await persistNovelStateIfNeeded(result, stateNodes);
+  const persisted = await persistNovelStateIfNeeded(result, stateNodes, emit);
 
   emit({
     stage: "done",
@@ -384,15 +391,25 @@ async function finish(
   });
 }
 
-async function persistNovelStateIfNeeded(result: ClassificationResult, stateNodes: Awaited<ReturnType<typeof loadStateNodes>>) {
+async function persistNovelStateIfNeeded(result: ClassificationResult, stateNodes: Awaited<ReturnType<typeof loadStateNodes>>, emit: Emit) {
   if (!result.isNovel || !result.newState) {
+    emit({ stage: "persistence", title: "No new state to save", note: "Existing or screened state — no write was needed.", fields: [{ k: "status", v: "skipped" }] });
     return result;
   }
 
   const newNode = buildStateNodeFromCandidate(result.newState, stateNodes);
 
   if (!stateNodes.some((node) => node.id === newNode.id)) {
-    await saveStateNodes([...stateNodes, newNode]);
+    const saved = await saveStateNodes([...stateNodes, newNode]);
+    emit({
+      stage: "persistence",
+      title: saved ? "New state saved" : "New state available for this run only",
+      ok: saved,
+      note: saved ? "The state corpus was updated." : "The write did not complete. Classification is available, but persistent saving is not confirmed.",
+      fields: [{ k: "status", v: saved ? "saved" : "not-saved" }, { k: "state", v: newNode.id }]
+    });
+  } else {
+    emit({ stage: "persistence", title: "Existing node reused", fields: [{ k: "status", v: "reused" }, { k: "state", v: newNode.id }] });
   }
 
   return {

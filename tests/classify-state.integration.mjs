@@ -52,5 +52,8 @@ test("classification HTTP input validation and noise path", async (t) => {
     assert.equal(events.at(-1)?.stage, "done");
     assert.equal(events.at(-1)?.result?.source, "heuristic");
     assert.equal(events.at(-1)?.result?.isNovel, false);
+    assert.ok(events.some(event => event.stage === "validation"));
+    assert.equal(events.find(event => event.stage === "score")?.title, "No state match — new-state creation skipped");
+    assert.equal(events.find(event => event.stage === "persistence")?.fields.find(field => field.k === "status")?.v, "skipped");
   });
 });

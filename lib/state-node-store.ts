@@ -51,7 +51,9 @@ export async function saveStateNodes(nodes: StateNode[]) {
       JSON.stringify(nodes.map((node) => sanitizeStateNode(node)), null, 2),
       "utf8"
     );
+    return true;
   } catch (error) {
     console.warn("state-node-store: could not persist state nodes", error);
+    return false;
   }
 }

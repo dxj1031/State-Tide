@@ -24,6 +24,8 @@ test("model failures degrade to a completed local result", async (t) => {
       assert.equal(events.at(-1).stage, "done");
       assert.equal(events.at(-1).result.source, mode === "valid" ? "anthropic" : "heuristic");
       assert.equal(events.some((event) => event.stage === "fallback"), mode !== "valid");
+      assert.ok(events.some((event) => event.stage === "validation"));
+      assert.equal(events.find(event => event.stage === "persistence")?.fields.find(field => field.k === "status")?.v, "skipped");
       if (mode.includes("hang")) {
         assert.match(raw, /timed out after 10000 ms/);
         assert.ok(Date.now() - started < 15_000);

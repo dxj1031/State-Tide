@@ -198,6 +198,26 @@ synthetic, and next actions remain in page memory and reset on refresh.
 - `tests/matching.test.ts`: lightweight test coverage
 - `docs/similarity-and-retrieval.md`: bilingual similarity and retrieval design notes
 
+## Automatic run animation
+
+Each submission starts a new, in-memory run. The main stage automatically plays
+captured input checks, model/local branches, field normalization, scoring,
+persistence outcomes, history ranking, and timeline construction. Saving a next
+action appends its actual page-memory event to the same run.
+
+Fast execution can finish before its presentation; the animation explicitly says
+it is playing captured events. Pausing pauses presentation, not the request.
+Replay uses the captured events and does not call the model again. Export run
+JSON downloads only the current run's input/output events and timestamps; no
+server-side run history or new credentials are created. Client receipt time and
+the original server clock are retained separately in the export. Reduced-motion
+preferences disable decorative movement while keeping the recorded steps usable.
+
+Persistence is reported as saved, not-saved, skipped, or reused. A returned
+classification is not proof that a serverless write succeeded. The request gate,
+retrieval, timeline, and optional action have explicit events, rather than being
+inferred from the model response.
+
 ## Notes For Demo Use
 
 - This is not a therapy app.
